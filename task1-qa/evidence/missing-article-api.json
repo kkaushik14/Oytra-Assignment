@@ -1,0 +1,8 @@
+{
+  "method": "GET",
+  "url": "https://api.realworld.show/api/articles/oytra-qa-nonexistent-20261110",
+  "authentication": "none",
+  "status": 404,
+  "body": {"errors":{"article":["not found"]}},
+  "note": "Separate direct API request, not a captured browser network request. Observed during 10 November 2026 IST testing."
+}

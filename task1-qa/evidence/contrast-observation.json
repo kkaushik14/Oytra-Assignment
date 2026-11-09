@@ -1,0 +1,109 @@
+{
+  "ancestry": [
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(153, 153, 153)",
+      "fontSize": "16px",
+      "fontWeight": "300",
+      "opacity": "1",
+      "tag": "P"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "A"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "DIV"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "APP-ARTICLE-PREVIEW"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "APP-ARTICLE-LIST"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "DIV"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "DIV"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "DIV"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "DIV"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "APP-HOME-PAGE"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "APP-ROOT"
+    },
+    {
+      "background": "rgb(255, 255, 255)",
+      "color": "rgb(55, 58, 60)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "BODY"
+    },
+    {
+      "background": "rgba(0, 0, 0, 0)",
+      "color": "rgb(0, 0, 0)",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "opacity": "1",
+      "tag": "HTML"
+    }
+  ],
+  "text": "Getting started with ML concepts and practical applications for software developers"
+}

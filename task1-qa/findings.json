@@ -1,0 +1,103 @@
+{
+  "status": "FINAL - findings approved 10 November 2026",
+  "author": "Kumar Kaushik",
+  "application": "Conduit - RealWorld Angular live demo",
+  "url": "https://demo.realworld.show",
+  "testedDate": "10 November 2026 (IST)",
+  "findings": [
+    {
+      "id": "QA-01",
+      "title": "Rapid repeated favorite clicks leave the visible count and state incorrect until reload",
+      "severity": "Medium",
+      "steps": "1. Sign in with a controlled account and create a disposable article. 2. On the Global Feed, confirm its favorite count is 0 and the button is visually unfavorited. 3. Double-click its favorite button. 4. Observe the immediate UI. 5. Reload the feed. 6. Reset with one click and repeat the double-click sequence.",
+      "expected": "The interface should either ignore additional clicks while the request is in flight or accurately show the persisted favorite state and count without requiring a reload.",
+      "actual": "After the double-click, the feed still showed 0 and the outline (unfavorited) style. Reloading showed 1 and the filled (favorited) style. The same immediate-versus-reloaded mismatch was reproduced after resetting and repeating the sequence.",
+      "impact": "A user cannot tell whether their favorite action succeeded, and the count/state displayed during the session is incorrect.",
+      "cause": "Rapid requests are likely accepted while the UI is pending. The inspected public component uses a CSS disabled class during submission rather than a native disabled attribute, but the exact deployed source revision is not established.",
+      "fix": "Prevent repeat activation while a favorite request is pending, serialize or cancel duplicate requests, and reconcile the displayed count/state with the confirmed server result.",
+      "evidence": [
+        "favorite-doubleclick-before-refresh.jpg",
+        "favorite-doubleclick-after-refresh.jpg",
+        "favorite-repeat.json"
+      ],
+      "image": "favorite-doubleclick-after-refresh.jpg"
+    },
+    {
+      "id": "QA-02",
+      "title": "Deleting an already-deleted article leaves a stale tab stuck without feedback",
+      "severity": "Medium",
+      "steps": "1. Open the same controlled disposable article in two tabs. 2. Delete it in tab B and confirm that tab B returns to the feed. 3. Without refreshing tab A, click Delete Article. 4. Repeat with a fresh controlled article.",
+      "expected": "The stale tab should show an understandable not-found/deletion error and recover to the feed, or refresh its state.",
+      "actual": "The stale tab remains on the already-deleted article. Its delete controls gain a disabled CSS class, no feedback or recovery path is shown, and the browser captures an error object. The native disabled property remains false. The behavior was reproduced with a second disposable article.",
+      "impact": "A user working from a stale tab is stranded on content that no longer exists and receives no indication of what happened or how to recover.",
+      "cause": "The current public article component sets its deleting state and handles only the success callback, which supports a missing-error-recovery hypothesis. The deployed build revision is not confirmed, so this is not asserted as a proven source-line cause.",
+      "fix": "Handle delete failures by resetting pending state, showing a clear deleted/not-found message, and navigating or offering a route back to the feed.",
+      "evidence": [
+        "stale-delete-dom.txt",
+        "stale-delete.jpg"
+      ],
+      "image": "stale-delete.jpg"
+    },
+    {
+      "id": "QA-03",
+      "title": "Missing article leaves an unexplained blank content area",
+      "severity": "Medium",
+      "steps": "1. Navigate directly to /article/oytra-qa-nonexistent-20261110. 2. Wait for the request to settle. 3. Observe the main content area. 4. Repeat while logged in and logged out.",
+      "expected": "Show an article-not-found message and a recovery action such as Return to feed.",
+      "actual": "Only the site navigation and footer remain. No not-found or retry message appears. A separate unauthenticated request to the matching API endpoint returned HTTP 404 and errors.article = [not found].",
+      "impact": "Users following a stale or mistyped article link cannot tell whether the article is missing or the application is still loading.",
+      "cause": "A frontend error handling or rendering problem is suspected. The API itself correctly reports 404. Current public source includes error handling, so its exact relationship to the deployed build is unconfirmed; do not claim a specific source line is proven responsible.",
+      "fix": "Ensure the deployed article view maps 404 responses to a visible error state and provides a route back to the feed.",
+      "evidence": [
+        "missing-article-dom.txt",
+        "missing-article.jpg",
+        "missing-article-api.json"
+      ],
+      "image": "missing-article.jpg"
+    },
+    {
+      "id": "QA-04",
+      "title": "Whitespace-only comments are accepted and persisted",
+      "severity": "Low",
+      "steps": "1. Sign in with a controlled account and open its article. 2. Enter three spaces in Write a comment. 3. Click Post Comment. 4. Reload the article.",
+      "expected": "Reject a comment with no non-whitespace content and display a clear validation message.",
+      "actual": "A visually empty comment card is created with author/date/delete metadata. It remains after refresh. The saved rendered paragraph contains only spaces.",
+      "impact": "Users can create empty discussion entries, cluttering the thread without meaningful content.",
+      "cause": "Missing whitespace normalization/non-empty validation is suspected. Persistence is verified through a browser refresh; backend implementation was not inspected.",
+      "fix": "Trim or validate non-whitespace content on the server and mirror that validation in the comment form.",
+      "evidence": [
+        "blank-comment-markup.html",
+        "blank-comment-before-refresh.jpg",
+        "blank-comment-persisted.jpg"
+      ],
+      "image": "blank-comment-persisted.jpg"
+    },
+    {
+      "id": "QA-05",
+      "title": "Comment delete action cannot be reached by keyboard",
+      "severity": "Medium",
+      "steps": "1. Open your own article containing your own comment. 2. Focus the comment-author link. 3. Press Tab. 4. Inspect the delete icon's element and accessibility role. 5. Compare with a mouse click on that icon.",
+      "expected": "Tab reaches a named Delete comment button; Enter or Space activates it.",
+      "actual": "Tab moves from the comment-author link directly to the footer Conduit link, skipping the trash icon. The control is an i element inside a span, has tabIndex -1 and no role or accessible label. A mouse click deleted the disposable comment successfully.",
+      "impact": "Keyboard-only users cannot invoke the visible comment-delete action.",
+      "cause": "The deployed DOM uses a non-focusable decorative element as the interactive control. This immediate markup cause was inspected directly; it does not require a backend hypothesis.",
+      "fix": "Replace it with a native button with an accessible Delete comment label; keep the icon decorative and preserve the existing deletion handler.",
+      "evidence": [
+        "comment-keyboard-skip.json",
+        "comment-keyboard-skip.jpg",
+        "blank-comment-markup.html"
+      ],
+      "image": "comment-keyboard-skip.jpg"
+    }
+  ],
+  "rootCause": "QA-05 prevents keyboard users from deleting their own comments. The problem occurs when a comment owned by the signed-in user displays its trash icon. In the live DOM, that control is an i element nested in a span, with tabIndex -1 and no button role or accessible label. Pressing Tab from the comment-author link moved focus directly to the footer link, skipping deletion. Clicking the same trash icon with the mouse successfully deleted the disposable comment, showing that the deletion path itself worked in this test. The immediate cause is therefore confirmed at the rendered-markup level: the interactive action lacks native keyboard semantics and focusability. Replace the control with a type=button element carrying an accessible Delete comment label and retain the existing handler, while hiding the decorative icon from assistive technology. Verify the fix by reaching the button with Tab, activating it separately with Enter and Space, checking a descriptive accessible name, and confirming that only the controlled user's intended comment disappears.",
+  "limitations": "This is a time-boxed live-demo review, not a comprehensive security audit. The backend explicitly isolates accounts/sessions; re-registration created a different context, while correct login restored the original article. This behavior is excluded from defects. A controlled two-account authorization investigation produced inconsistent ownership context after the demo session changed, so it is deliberately excluded rather than overstated as a security finding. A direct account-A ownership check correctly created and deleted an article as account A. Long-text limits, session expiration and a reliable mobile screenshot remain incomplete. No full screen-reader session was performed. The old demo.realworld.io HTTP 404 is an outdated reference, not an application defect. Current public source was inspected only selectively; the deployed commit is unknown. No application fixes were required or made.",
+  "passed": "Verified: home/feed/tags, required authentication fields, malformed email message, valid account creation/login, invalid password rejection, logout, authenticated refresh, logged-out editor/settings redirects, article creation/editing/persistence, Unicode and Markdown rendering, required article-field errors, and mouse deletion of the controlled comment.",
+  "references": [
+    "https://github.com/realworld-apps/angular-realworld-example-app",
+    "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html",
+    "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
+  ],
+  "reviewDecision": "User approved the revised five findings on 10 November 2026. QA-05 and its root-cause topic were retained; QA-01 and QA-02 were replaced with stronger reproduced functional defects.",
+  "revisionCandidates": []
+}

@@ -1,0 +1,15 @@
+{
+  "action": "Tab pressed from last comment author link",
+  "focus": {
+    "href": "/",
+    "html": "<a routerlink=\"/\" class=\"logo-font\" href=\"/\"><img src=\"assets/conduit-logo.svg\" alt=\"Conduit\" class=\"footer-logo\"></a>",
+    "tag": "A"
+  },
+  "deleteControl": {
+    "ariaLabel": null,
+    "parent": "<span class=\"mod-options\"><i class=\"ion-trash-a\"></i></span>",
+    "role": null,
+    "tabIndex": -1,
+    "tag": "I"
+  }
+}

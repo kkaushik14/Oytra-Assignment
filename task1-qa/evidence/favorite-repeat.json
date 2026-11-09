@@ -1,0 +1,11 @@
+{
+  "action": "Second reproduction: reset to zero via single click; double-click favorite; compare before/after refresh",
+  "before": {
+    "classes": "btn btn-sm btn-outline-primary",
+    "text": " 0 "
+  },
+  "after": {
+    "classes": "btn btn-sm btn-primary",
+    "text": " 1 "
+  }
+}

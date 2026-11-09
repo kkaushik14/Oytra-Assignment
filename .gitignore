@@ -1,0 +1,10 @@
+.DS_Store
+.runtime/
+.private/
+node_modules/
+.env
+.env.*
+!.env.example
+*.sqlite*
+*.log
+

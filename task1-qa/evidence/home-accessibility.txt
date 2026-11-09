@@ -1,0 +1,140 @@
+- navigation:
+  - link "Conduit":
+    - /url: /
+    - img "Conduit"
+  - list:
+    - link "Home" [active]:
+      - /url: /
+    - link "Sign in":
+      - /url: /login
+    - link "Sign up":
+      - /url: /register
+- heading "Conduit" [level=1]:
+  - img "Conduit"
+- paragraph:
+  - text: This is the
+  - link "Angular frontend":
+    - /url: https://github.com/realworld-apps/angular-realworld-example-app
+  - text: demo from the
+  - link "Realworld":
+    - /url: https://github.com/realworld-apps/realworld
+  - text: project.
+  - text: This demo is connected to a demo backend that enforces session isolation.
+- list:
+  - link "Global Feed":
+    - /url: /
+  - text: 
+- link:
+  - /url: /profile/sarahchen
+- link "sarahchen":
+  - /url: /profile/sarahchen
+- generic: November 10, 2026
+- button " 1":
+  - generic: 
+  - text: "1"
+- link "Introduction to Machine Learning for Developers Getting started with ML concepts and practical applications for software developers Read more... ai datascience machinelearning python":
+  - /url: /article/introduction-to-machine-learning-for-developers
+  - heading "Introduction to Machine Learning for Developers" [level=1]
+  - paragraph: Getting started with ML concepts and practical applications for software developers
+  - text: Read more...
+  - list:
+    - listitem: ai
+    - listitem: datascience
+    - listitem: machinelearning
+    - listitem: python
+- link:
+  - /url: /profile/mikewilson
+- link "mikewilson":
+  - /url: /profile/mikewilson
+- generic: November 10, 2026
+- button " 1":
+  - generic: 
+  - text: "1"
+- link "Building Scalable APIs with Node.js Architectural patterns and best practices for creating robust backend services Read more... api architecture backend nodejs":
+  - /url: /article/building-scalable-apis-with-node-js
+  - heading "Building Scalable APIs with Node.js" [level=1]
+  - paragraph: Architectural patterns and best practices for creating robust backend services
+  - text: Read more...
+  - list:
+    - listitem: api
+    - listitem: architecture
+    - listitem: backend
+    - listitem: nodejs
+- link:
+  - /url: /profile/janesmith
+- link "janesmith":
+  - /url: /profile/janesmith
+- generic: November 10, 2026
+- button " 2":
+  - generic: 
+  - text: "2"
+- 'link "React Hooks: Best Practices and Common Pitfalls Essential patterns and anti-patterns when working with React Hooks Read more... frontend hooks javascript react"':
+  - /url: /article/react-hooks-best-practices
+  - 'heading "React Hooks: Best Practices and Common Pitfalls" [level=1]'
+  - paragraph: Essential patterns and anti-patterns when working with React Hooks
+  - text: Read more...
+  - list:
+    - listitem: frontend
+    - listitem: hooks
+    - listitem: javascript
+    - listitem: react
+- link:
+  - /url: /profile/johndoe
+- link "johndoe":
+  - /url: /profile/johndoe
+- generic: November 10, 2026
+- button " 2":
+  - generic: 
+  - text: "2"
+- link "How to Learn JavaScript Efficiently A comprehensive guide to mastering JavaScript from beginner to advanced level Read more... beginners javascript programming webdev":
+  - /url: /article/how-to-learn-javascript-efficiently
+  - heading "How to Learn JavaScript Efficiently" [level=1]
+  - paragraph: A comprehensive guide to mastering JavaScript from beginner to advanced level
+  - text: Read more...
+  - list:
+    - listitem: beginners
+    - listitem: javascript
+    - listitem: programming
+    - listitem: webdev
+- navigation:
+  - list:
+    - button "1"
+- paragraph: Popular Tags
+- link "ai":
+  - /url: /tag/ai
+- link "api":
+  - /url: /tag/api
+- link "architecture":
+  - /url: /tag/architecture
+- link "backend":
+  - /url: /tag/backend
+- link "beginners":
+  - /url: /tag/beginners
+- link "datascience":
+  - /url: /tag/datascience
+- link "frontend":
+  - /url: /tag/frontend
+- link "hooks":
+  - /url: /tag/hooks
+- link "javascript":
+  - /url: /tag/javascript
+- link "machinelearning":
+  - /url: /tag/machinelearning
+- link "nodejs":
+  - /url: /tag/nodejs
+- link "programming":
+  - /url: /tag/programming
+- link "python":
+  - /url: /tag/python
+- link "react":
+  - /url: /tag/react
+- link "webdev":
+  - /url: /tag/webdev
+- contentinfo:
+  - link "Conduit":
+    - /url: /
+    - img "Conduit"
+  - text: © 2026. An interactive learning project from
+  - link "RealWorld OSS Project":
+    - /url: https://github.com/gothinkster/realworld
+  - text: . Code licensed under MIT.

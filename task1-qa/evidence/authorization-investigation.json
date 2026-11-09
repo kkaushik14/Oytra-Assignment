@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-10",
+  "scope": "Controlled disposable accounts and clearly labelled disposable articles only",
+  "result": "Excluded from reportable findings",
+  "reason": "A two-account API sequence returned inconsistent article ownership context after the demo session changed, so it did not prove cross-account access to an article verified as belonging to account A. The result is not suitable for severity classification.",
+  "sanityCheck": {
+    "accountALoginIdentityMatched": true,
+    "accountACurrentUserIdentityMatched": true,
+    "accountACreatedArticleAuthorMatched": true,
+    "accountACleanupReturned": "HTTP 204"
+  },
+  "decision": "Retain the approved whitespace-only comment finding. Do not claim a High or Critical authorization issue without unambiguous, repeatable evidence."
+}

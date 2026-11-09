@@ -1,0 +1,65 @@
+- navigation:
+  - link "Conduit":
+    - /url: /
+    - img "Conduit"
+  - list:
+    - link "Home":
+      - /url: /
+    - link " New Article":
+      - /url: /editor
+      - generic: 
+      - text: New Article
+    - link " Settings":
+      - /url: /settings
+      - generic: 
+      - text: Settings
+    - link "oytra_qa_a_20261110":
+      - /url: /profile/oytra_qa_a_20261110
+      - text: oytra_qa_a_20261110
+- heading "OYTRA QA disposable article 20261110" [level=1]
+- link:
+  - /url: /profile/oytra_qa_a_20261110
+- link "oytra_qa_a_20261110":
+  - /url: /profile/oytra_qa_a_20261110
+- generic: November 10, 2026
+- link " Edit Article":
+  - /url: /editor/oytra-qa-disposable-article-20261110
+  - generic: 
+  - text: Edit Article
+- button " Delete Article" [active]:
+  - generic: 
+  - text: Delete Article
+- heading "QA controlled content — edited" [level=1]
+- paragraph: "Unicode: café — नमस्ते 🚀"
+- paragraph:
+  - strong: Bold
+  - text: and
+  - emphasis: italic
+  - text: .
+- paragraph: "Edit marker: revision two. Disposable assessment data."
+- list
+- separator
+- link:
+  - /url: /profile/oytra_qa_a_20261110
+- link "oytra_qa_a_20261110":
+  - /url: /profile/oytra_qa_a_20261110
+- generic: November 10, 2026
+- link " Edit Article":
+  - /url: /editor/oytra-qa-disposable-article-20261110
+  - generic: 
+  - text: Edit Article
+- button " Delete Article":
+  - generic: 
+  - text: Delete Article
+- list
+- textbox "Write a comment..."
+- button "Post Comment"
+- list
+- contentinfo:
+  - link "Conduit":
+    - /url: /
+    - img "Conduit"
+  - text: © 2026. An interactive learning project from
+  - link "RealWorld OSS Project":
+    - /url: https://github.com/gothinkster/realworld
+  - text: . Code licensed under MIT.

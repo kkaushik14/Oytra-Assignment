@@ -1,0 +1,618 @@
+{
+  "name": "Oytra — GitHub Repository Intelligence Digest",
+  "nodes": [
+    {
+      "id": "e0cfa68b-59d2-44e0-892c-e9845d3c88a1",
+      "name": "Digest webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "oytra-repository-digest",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "a762d728-5328-49aa-9651-3a86c3c92872"
+    },
+    {
+      "id": "30115e1f-e92d-4da3-b405-1c7bbd07f057",
+      "name": "Configure request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? {};\nconst topic = String(body.topic ?? 'automation').trim().toLowerCase();\nconst threshold = Number(body.threshold ?? 1000);\nif (!/^[a-z0-9][a-z0-9-]{0,49}$/.test(topic)) {\n  throw new Error('Topic must contain 1–50 lowercase letters, digits or hyphens.');\n}\nif (!Number.isFinite(threshold) || threshold < 0 || threshold > 10000000) {\n  throw new Error('Threshold must be a number between 0 and 10000000.');\n}\nreturn [{ json: { topic, threshold, requestedAt: new Date().toISOString() } }];\n"
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "5d73e86b-910b-4bd3-80b2-fe5761f98de0",
+      "name": "Search GitHub",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "url": "https://api.github.com/search/repositories",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ \"topic:\" + $json.topic }}"
+            },
+            {
+              "name": "sort",
+              "value": "stars"
+            },
+            {
+              "name": "order",
+              "value": "desc"
+            },
+            {
+              "name": "per_page",
+              "value": "10"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "88ddc244-a4fd-4473-be64-1e6f1c556f18",
+      "name": "Normalize top five",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst config = $('Configure request').first().json;\nif (!Array.isArray(response.items)) throw new Error('GitHub response is missing the items array.');\nconst seen = new Set();\nconst valid = response.items.filter(repo => {\n  if (!repo || typeof repo.full_name !== 'string' || !repo.owner?.login || !repo.name ||\n      typeof repo.html_url !== 'string' || !repo.html_url.startsWith('https://github.com/') ||\n      !Number.isFinite(repo.stargazers_count) || repo.stargazers_count < 0 ||\n      seen.has(repo.full_name)) return false;\n  seen.add(repo.full_name);\n  return true;\n});\nif (response.items.length && !valid.length) throw new Error('All repositories were malformed.');\nconst repositories = valid.sort((a,b) => b.stargazers_count-a.stargazers_count).slice(0,5).map(repo => ({\n  name:repo.name, owner:repo.owner.login, fullName:repo.full_name,\n  description:typeof repo.description === 'string' ? repo.description : 'No description provided',\n  stars:repo.stargazers_count, language:repo.language ?? 'Not specified',\n  url:repo.html_url, updatedAt:repo.updated_at ?? null,\n}));\nreturn [{json:{...config,repositories,count:repositories.length,\n  skipped:response.items.length-valid.length,incompleteResults:response.incomplete_results === true}}];\n"
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "28101325-b3d5-45ac-8876-599dafa67699",
+      "name": "Any results?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "98afb1fd-79da-4e4c-9fbc-e00ae4ca96d8",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e288993a-4dc3-490b-99d9-301a236b03d8",
+      "name": "Get language breakdown",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1100,
+        -100
+      ],
+      "parameters": {
+        "url": "={{ \"https://api.github.com/repos/\" + encodeURIComponent($json.repositories[0].owner) + \"/\" + encodeURIComponent($json.repositories[0].name) + \"/languages\" }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "17e91d6b-7282-4b92-aed4-6b70e199a783",
+      "name": "Combine enrichment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        -100
+      ],
+      "parameters": {
+        "jsCode": "const base = $('Normalize top five').first().json;\nconst result = $input.first().json;\nconst entries = Object.entries(result).filter(([name,bytes]) => name !== 'error' && typeof bytes === 'number' && Number.isFinite(bytes) && bytes > 0);\nconst total = entries.reduce((sum,[,bytes]) => sum+bytes,0);\nconst languages = entries.sort((a,b)=>b[1]-a[1]).slice(0,3).map(([name,bytes]) => ({name,bytes,percent:Math.round(bytes/total*1000)/10}));\nreturn [{json:{...base,topStars:base.repositories[0].stars,\n  enrichment:{status:result.error ? 'unavailable' : (total ? 'ok' : 'no-language-data'),\n    repository:base.repositories[0].fullName,languages}}}];\n"
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "57e6c346-37bb-4614-8b77-0eeed71be7fc",
+      "name": "Popularity threshold",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1540,
+        -100
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "25c92abc-bff7-4627-bc06-e5ffa171563c",
+              "leftValue": "={{ $json.topStars }}",
+              "rightValue": "={{ $json.threshold }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6e3c1f31-4ce0-464e-89b1-1a32957a575b",
+      "name": "Priority digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        -200
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{...$input.first().json,priority:'high'}}];"
+      }
+    },
+    {
+      "id": "cb0febc6-c04f-47a4-8ff8-1580719a0c6c",
+      "name": "Standard digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{...$input.first().json,priority:'standard'}}];"
+      }
+    },
+    {
+      "id": "d80b16ac-5472-48c9-85ce-4e0da922e868",
+      "name": "No results notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        180
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{...$input.first().json,priority:'empty'}}];"
+      }
+    },
+    {
+      "id": "210d5135-3bb0-4ff9-a21d-4fbf67034e96",
+      "name": "Format digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n// The branch nodes supply a distinct priority value before formatting.\nconst clean = value => String(value).replace(/@/g,'＠').replace(/[\\r\\n]/g,' ').replace(/[`*_~<>]/g,'').slice(0,160);\nconst title = data.priority === 'high' ? 'PRIORITY — GitHub Repository Digest' :\n  data.priority === 'empty' ? 'GitHub Repository Digest — No results' : 'STANDARD — GitHub Repository Digest';\nconst lines = [title,`Topic: ${data.topic} | ${data.requestedAt}`,`Popularity rule: top repository stars > ${data.threshold}`, ''];\nif (!data.count) lines.push('No matching repositories were returned. No enrichment was attempted.');\nfor (const [index,repo] of data.repositories.entries()) {\n  lines.push(`${index+1}. ${clean(repo.fullName)} — ${repo.stars} stars · ${clean(repo.language)}`,repo.url);\n}\nif (data.enrichment) {\n  lines.push('',`Language enrichment for ${clean(data.enrichment.repository)}:`);\n  lines.push(data.enrichment.status === 'ok' ? data.enrichment.languages.map(x=>`${clean(x.name)} ${x.percent}%`).join(', ') : 'Unavailable; original repository information retained.');\n}\nif (data.incompleteResults) lines.push('Warning: GitHub reported incomplete search results.');\nif (data.skipped) lines.push(`Skipped ${data.skipped} invalid or duplicate result(s).`);\nif (data.count && data.count < 5) lines.push(`Only ${data.count} valid matching repositories were available.`);\nconst content = lines.join('\\n');\nif (content.length > 2000) throw new Error('Digest exceeds Discord message limit.');\nreturn [{json:{...data,content}}];\n"
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "07d70105-4677-48ca-abe5-2e87c7d03f6d",
+      "name": "Send Discord digest",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "authentication": "webhook",
+        "resource": "message",
+        "operation": "sendLegacy",
+        "content": "={{ $json.content }}",
+        "options": {
+          "wait": true
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "d0f80462-4b9b-4874-8dfb-dbc6dc464c8a",
+      "name": "Delivery receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2420,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const message=$input.first().json; const digest=$('Format digest').first().json; if(!message.id) throw new Error('Discord did not return a message ID.'); return [{json:{status:'delivered',priority:digest.priority,count:digest.count,topic:digest.topic,enrichment:digest.enrichment?.status ?? 'not-attempted',messageId:message.id,executionId:$execution.id}}];"
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "84fa75d3-ef0c-47ca-8774-083616d90ced",
+      "name": "Respond success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2640,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "38465f3d-e73d-4857-8619-8e5988bd3e7e",
+      "name": "Report failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        400
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{status:'failed',message:'Request processing or notification delivery failed. Inspect this execution for the failing node.',executionId:$execution.id}}];"
+      }
+    },
+    {
+      "id": "82ba787c-5676-43be-bf1c-f9c196696544",
+      "name": "Respond failure",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2200,
+        400
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 502
+        }
+      }
+    },
+    {
+      "id": "97c873cf-9bb8-4b9b-89c9-40e9ec6e8253",
+      "name": "Mark execution failed",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2420,
+        400
+      ],
+      "parameters": {
+        "errorType": "errorMessage",
+        "errorMessage": "={{ $json.message }}"
+      }
+    }
+  ],
+  "connections": {
+    "Digest webhook": {
+      "main": [
+        [
+          {
+            "node": "Configure request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configure request": {
+      "main": [
+        [
+          {
+            "node": "Search GitHub",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search GitHub": {
+      "main": [
+        [
+          {
+            "node": "Normalize top five",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize top five": {
+      "main": [
+        [
+          {
+            "node": "Any results?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any results?": {
+      "main": [
+        [
+          {
+            "node": "Get language breakdown",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No results notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get language breakdown": {
+      "main": [
+        [
+          {
+            "node": "Combine enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine enrichment": {
+      "main": [
+        [
+          {
+            "node": "Popularity threshold",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Popularity threshold": {
+      "main": [
+        [
+          {
+            "node": "Priority digest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Standard digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Priority digest": {
+      "main": [
+        [
+          {
+            "node": "Format digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Standard digest": {
+      "main": [
+        [
+          {
+            "node": "Format digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No results notice": {
+      "main": [
+        [
+          {
+            "node": "Format digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format digest": {
+      "main": [
+        [
+          {
+            "node": "Send Discord digest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Discord digest": {
+      "main": [
+        [
+          {
+            "node": "Delivery receipt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delivery receipt": {
+      "main": [
+        [
+          {
+            "node": "Respond success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Report failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report failure": {
+      "main": [
+        [
+          {
+            "node": "Respond failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond failure": {
+      "main": [
+        [
+          {
+            "node": "Mark execution failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "executionTimeout": 120
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}

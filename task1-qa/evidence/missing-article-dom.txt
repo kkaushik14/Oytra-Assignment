@@ -1,0 +1,27 @@
+- navigation:
+  - link "Conduit":
+    - /url: /
+    - img "Conduit"
+  - list:
+    - link "Home":
+      - /url: /
+    - link " New Article":
+      - /url: /editor
+      - generic: 
+      - text: New Article
+    - link " Settings":
+      - /url: /settings
+      - generic: 
+      - text: Settings
+    - link "oytra_qa_a_20261110":
+      - /url: /profile/oytra_qa_a_20261110
+      - text: oytra_qa_a_20261110
+- list
+- contentinfo:
+  - link "Conduit":
+    - /url: /
+    - img "Conduit"
+  - text: © 2026. An interactive learning project from
+  - link "RealWorld OSS Project":
+    - /url: https://github.com/gothinkster/realworld
+  - text: . Code licensed under MIT.
