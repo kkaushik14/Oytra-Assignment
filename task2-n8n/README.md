@@ -1,45 +1,71 @@
-# Oytra — GitHub Repository Intelligence Digest
+# Task 2 — n8n GitHub Repository Intelligence Digest
 
-An importable n8n workflow that receives a topic and a popularity threshold, searches GitHub repositories, ranks and enriches the top five, selects a priority, and sends a Discord digest. The design deliberately uses one verified notification destination rather than untested Slack/email placeholders.
+## APIs used and why
+
+**First API — GitHub Search Repositories** (`GET /search/repositories`)  
+Chosen because it is free, requires no authentication for public searches, returns structured star counts and language metadata, and directly maps to the "trending repos for a topic" suggestion in the assignment. The query sorts by stars descending so the most popular result is always first.
+
+**Second API — GitHub Languages** (`GET /repos/{owner}/{repo}/languages`)  
+Used to enrich the top-ranked repository with a byte-count breakdown of its programming languages. This is the same host as the first call, so no additional credential is needed. The node falls back gracefully to the original repository data if the secondary request fails.
+
+**Output — Discord Webhook**  
+Discord was chosen because a working webhook was immediately available. The same workflow logic works with any HTTP POST destination; only the `Send Discord digest` node would change.
+
+## What the transformation does
+
+The `Normalize top five` Code node:
+
+1. Filters out items missing required fields (`full_name`, `owner.login`, `html_url`, `stargazers_count`).
+2. Deduplicates by `full_name` to guard against duplicate results from the GitHub API.
+3. Sorts the remaining valid items by `stargazers_count` descending.
+4. Keeps the top five.
+
+The `Combine enrichment` node converts the raw byte counts from the Languages API into percentage-rounded language shares, then merges them onto the top repository's data.
+
+The `Format digest` node assembles a plain-text message within Discord's 2 000-character limit and neutralises `@` mention characters.
+
+## How the error path behaves
+
+Every node that can fail (GitHub search, normalisation, formatting, Discord delivery) is wired to `Report failure` on error. That node:
+
+1. Logs the failed node name and error message.
+2. Passes the data to `Respond failure`, which returns HTTP 502 with a JSON error body to the original webhook caller.
+3. Passes the data to `Mark execution failed` (`stopAndError`), which marks the n8n execution as failed so it appears in red in the execution list.
+
+Language enrichment is the only intentional exception: if the second GitHub call fails, `Combine enrichment` falls back to the original repository data and execution continues normally.
 
 ## Import and configure
 
 1. Import `Task2_Workflow_Kumar_Kaushik.json` into n8n.
-2. Open **Send Discord digest** and select a Discord Webhook credential. Do not place its webhook URL in this repository.
-3. Click **Execute workflow** for a test run, then POST JSON to the displayed n8n test URL. Publish/activate the workflow only after the notification credential is configured for production.
-
-Example request body:
+2. Open **Send Discord digest** → select a Discord Webhook credential. Do not place the webhook URL in this repository.
+3. Use the test webhook URL to POST a request; activate the workflow only after the credential is configured.
 
 ```json
 { "topic": "automation", "threshold": 1000 }
 ```
 
-`topic` must be 1–50 lowercase letters, digits, or hyphens. `threshold` must be from 0 through 10,000,000.
+`topic`: 1–50 lowercase letters, digits, or hyphens. `threshold`: 0–10 000 000.
 
-## Workflow behaviour
+## Workflow flow
 
-`Digest webhook` → validate request → GitHub repository search → normalize/deduplicate/top five → result check → language enrichment → popularity branch → format digest → Discord → delivery receipt → webhook response.
+`Digest webhook` → validate → GitHub search → normalize/top-five → result check → language enrichment → popularity branch → format → Discord → receipt → respond success  
+Any error → `Report failure` → `Respond failure` → `Mark execution failed`
 
-- **Priority:** the leading repository has more stars than the supplied threshold.
-- **Standard:** the leading repository does not exceed the supplied threshold.
-- **No results:** sends a clear no-results notice and does not call the enrichment endpoint.
-- **Resilience:** GitHub request, normalization, formatting, notification, and receipt errors route through `Report failure`, respond with an error, and stop the execution visibly. Language enrichment falls back to the original repository data if that secondary request fails.
+## Verified test evidence (10 November 2026, Cloud n8n kkos-14)
 
-The formatter limits the outbound content to Discord's 2,000-character maximum, neutralizes mention characters, and retains the queried topic, priority, top-five ranking, and available language breakdown.
+| Case | Input | Branch | Result |
+|---|---|---|---|
+| Priority | `automation`, threshold `1000` | Priority | ✅ Delivered to Discord, 5 repos, enrichment succeeded |
+| Standard | `automation`, threshold `10000000` | Standard | ✅ Delivered to Discord, 5 repos, enrichment succeeded |
+| Empty | nonexistent topic | No results | ✅ Delivered no-results notice, enrichment skipped |
+| Validation failure | threshold `99999999` | Error | ✅ HTTP 502, execution marked failed |
 
-## Verified test evidence
+`screenshots/workflow-draft.png` shows the imported canvas. `Task2_Workflow_Canvas.png` and `Task2_Successful_Execution.png` are to be added after capturing them from the Cloud instance.
 
-On 10 November 2026 in the configured Cloud n8n instance:
+## Local code checks
 
-| Case | Input | Result |
-| --- | --- | --- |
-| Priority | `automation`, threshold `1000` | Delivered, high priority, 5 repositories, enrichment succeeded |
-| Standard | `automation`, threshold `10000000` | Delivered, standard priority, 5 repositories, enrichment succeeded |
-| Empty | controlled nonexistent topic | Delivered, empty priority, 0 repositories, enrichment not attempted |
-| Validation failure | threshold above `10000000` | HTTP 502 via the visible failure route |
+```
+node scripts/test-workflow-code.cjs
+```
 
-`screenshots/workflow-draft.png` documents the imported workflow canvas. Credential values and message IDs are intentionally excluded.
-
-## Local checks
-
-Run `node scripts/test-workflow-code.cjs` from the assignment root to exercise configuration, ranking/top-five behavior, empty and malformed results, deduplication, enrichment fallback, and message sizing for the Code-node logic.
+Covers: input validation, ranking, deduplication, empty response, malformed items, enrichment calculation, enrichment fallback, both digest formats, message size limit.

@@ -101,7 +101,7 @@ Covers: configuration validation (valid, invalid topic, negative threshold), ran
 
 | File | Contents |
 |---|---|
-| `task2-n8n/screenshots/Task2_Workflow_Canvas.png` | Full 18-node workflow canvas |
-| `task2-n8n/screenshots/Task2_Successful_Execution.png` | Successful execution panel (priority case) |
-| `task2-n8n/screenshots/workflow-draft.png` | Earlier canvas captured during development |
+| `task2-n8n/screenshots/workflow-draft.png` | Canvas captured during development |
+| `task2-n8n/screenshots/Task2_Workflow_Canvas.png` | ⏳ Full canvas — to be added from Cloud instance |
+| `task2-n8n/screenshots/Task2_Successful_Execution.png` | ⏳ Successful execution panel — to be added from Cloud instance |
 | `task1-qa/evidence/` | Per-finding screenshots and JSON for all five QA findings |
