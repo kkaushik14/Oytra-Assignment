@@ -106,6 +106,12 @@ scripts/
 
 ---
 
+## Walkthrough
+
+See [`WALKTHROUGH.md`](WALKTHROUGH.md) for a written step-by-step walkthrough of
+both tasks — testing approach, all five findings, workflow design, live test
+results, error routes, and import instructions.
+
 ## Limitations and scope notes
 
 - Testing was time-boxed to 120 minutes against the live demo; this is not a
