@@ -20,7 +20,7 @@
 | **4**<br/>_(QA-04)_ | Comment delete action unreachable via keyboard navigation     | **Exp:** `Tab` reaches Delete button; `Enter`/`Space` activates.<br/>**Act:** `Tab` skips trash icon; control is `<i>` inside `<span>` with `tabIndex -1`. | **Medium** | Interactive click handler bound to decorative `<i>` element rather than native `<button>`. |
 | **5**<br/>_(QA-05)_ | Whitespace-only comments accepted and persisted               | **Exp:** Reject empty/whitespace input.<br/>**Act:** Empty comment card created; persists across reload.                                                   |  **Low**   | Missing string trimming / validation check on client form and server API.                  |
 
-**Root-Cause Analysis (QA-05):** The trash icon is an non-focusable `<i>` element (`tabIndex -1`) lacking button semantics and accessible labelling. Tabbing skips deletion, though mouse clicks trigger the delete API successfully. Fix: replace with `<button type="button" aria-label="Delete comment">` with keyboard event listeners.
+**Root-Cause Analysis (QA-04):** The trash icon is an non-focusable `<i>` element (`tabIndex -1`) lacking button semantics and accessible labelling. Tabbing skips deletion, though mouse clicks trigger the delete API successfully. Fix: replace with `<button type="button" aria-label="Delete comment">` with keyboard event listeners.
 
 ---
 

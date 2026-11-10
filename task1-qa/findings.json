@@ -1,6 +1,5 @@
 {
   "status": "FINAL - findings approved 10 November 2026",
-  "author": "Kumar Kaushik",
   "application": "Conduit - RealWorld Angular live demo",
   "url": "https://demo.realworld.show",
   "testedDate": "10 November 2026 (IST)",
@@ -49,7 +48,7 @@
       "image": "missing-article.jpg"
     },
     {
-      "id": "QA-05",
+      "id": "QA-04",
       "title": "Comment delete action cannot be reached by keyboard",
       "severity": "Medium",
       "steps": "1. Open your own article containing your own comment. 2. Focus the comment-author link. 3. Press Tab. 4. Inspect the delete icon's element and accessibility role. 5. Compare with a mouse click on that icon.",
@@ -66,7 +65,7 @@
       "image": "comment-keyboard-skip.jpg"
     },
     {
-      "id": "QA-04",
+      "id": "QA-05",
       "title": "Whitespace-only comments are accepted and persisted",
       "severity": "Low",
       "steps": "1. Sign in with a controlled account and open its article. 2. Enter three spaces in Write a comment. 3. Click Post Comment. 4. Reload the article.",
@@ -83,7 +82,7 @@
       "image": "blank-comment-persisted.jpg"
     }
   ],
-  "rootCause": "QA-05 prevents keyboard users from deleting their own comments. The problem occurs when a comment owned by the signed-in user displays its trash icon. In the live DOM, that control is an i element nested in a span, with tabIndex -1 and no button role or accessible label. Pressing Tab from the comment-author link moved focus directly to the footer link, skipping deletion. Clicking the same trash icon with the mouse successfully deleted the disposable comment, showing that the deletion path itself worked in this test. The immediate cause is therefore confirmed at the rendered-markup level: the interactive action lacks native keyboard semantics and focusability. Replace the control with a type=button element carrying an accessible Delete comment label and retain the existing handler, while hiding the decorative icon from assistive technology. Verify the fix by reaching the button with Tab, activating it separately with Enter and Space, checking a descriptive accessible name, and confirming that only the controlled user's intended comment disappears.",
+  "rootCause": "QA-04 prevents keyboard users from deleting their own comments. The problem occurs when a comment owned by the signed-in user displays its trash icon. In the live DOM, that control is an i element nested in a span, with tabIndex -1 and no button role or accessible label. Pressing Tab from the comment-author link moved focus directly to the footer link, skipping deletion. Clicking the same trash icon with the mouse successfully deleted the disposable comment, showing that the deletion path itself worked in this test. The immediate cause is therefore confirmed at the rendered-markup level: the interactive action lacks native keyboard semantics and focusability. Replace the control with a type=button element carrying an accessible Delete comment label and retain the existing handler, while hiding the decorative icon from assistive technology. Verify the fix by reaching the button with Tab, activating it separately with Enter and Space, checking a descriptive accessible name, and confirming that only the controlled user's intended comment disappears.",
   "limitations": "This is a time-boxed live-demo review, not a comprehensive security audit. The backend explicitly isolates accounts/sessions; re-registration created a different context, while correct login restored the original article. This behavior is excluded from defects. A controlled two-account authorization investigation produced inconsistent ownership context after the demo session changed, so it is deliberately excluded rather than overstated as a security finding. A direct account-A ownership check correctly created and deleted an article as account A. Long-text limits, session expiration and a reliable mobile screenshot remain incomplete. No full screen-reader session was performed. The old demo.realworld.io HTTP 404 is an outdated reference, not an application defect. Current public source was inspected only selectively; the deployed commit is unknown. No application fixes were required or made.",
   "passed": "Verified: home/feed/tags, required authentication fields, malformed email message, valid account creation/login, invalid password rejection, logout, authenticated refresh, logged-out editor/settings redirects, article creation/editing/persistence, Unicode and Markdown rendering, required article-field errors, and mouse deletion of the controlled comment.",
   "references": [
@@ -91,6 +90,7 @@
     "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html",
     "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html"
   ],
-  "reviewDecision": "User approved the revised five findings on 10 November 2026. QA-05 and its root-cause topic were retained; QA-01 and QA-02 were replaced with stronger reproduced functional defects.",
-  "revisionCandidates": []
+  "reviewDecision": "User approved the revised five findings on 10 November 2026. QA-04 (keyboard deletion) and its root-cause topic were retained; QA-01 and QA-02 were replaced with stronger reproduced functional defects.",
+  "revisionCandidates": [],
+  "author": "Kumar Kaushik"
 }
