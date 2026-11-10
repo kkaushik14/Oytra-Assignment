@@ -14,10 +14,19 @@ const accountA = JSON.parse(fs.readFileSync('.private/qa-accounts.json', 'utf8')
     headers: { authorization: `Token ${token}` },
   });
   const currentBody = await current.json();
-  console.log(JSON.stringify({
-    login: `HTTP ${login.status}`,
-    currentUser: `HTTP ${current.status}`,
-    loginIdentityMatchesAccountA: loginBody.user?.username === accountA.username,
-    currentIdentityMatchesAccountA: currentBody.user?.username === accountA.username,
-  }, null, 2));
-})().catch(error => { console.error(error.message); process.exitCode = 1; });
+  console.log(
+    JSON.stringify(
+      {
+        login: `HTTP ${login.status}`,
+        currentUser: `HTTP ${current.status}`,
+        loginIdentityMatchesAccountA: loginBody.user?.username === accountA.username,
+        currentIdentityMatchesAccountA: currentBody.user?.username === accountA.username,
+      },
+      null,
+      2
+    )
+  );
+})().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});

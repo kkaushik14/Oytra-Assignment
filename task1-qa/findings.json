@@ -32,10 +32,7 @@
       "impact": "A user working from a stale tab is stranded on content that no longer exists and receives no indication of what happened or how to recover.",
       "cause": "The current public article component sets its deleting state and handles only the success callback, which supports a missing-error-recovery hypothesis. The deployed build revision is not confirmed, so this is not asserted as a proven source-line cause.",
       "fix": "Handle delete failures by resetting pending state, showing a clear deleted/not-found message, and navigating or offering a route back to the feed.",
-      "evidence": [
-        "stale-delete-dom.txt",
-        "stale-delete.jpg"
-      ],
+      "evidence": ["stale-delete-dom.txt", "stale-delete.jpg"],
       "image": "stale-delete.jpg"
     },
     {
@@ -48,29 +45,8 @@
       "impact": "Users following a stale or mistyped article link cannot tell whether the article is missing or the application is still loading.",
       "cause": "A frontend error handling or rendering problem is suspected. The API itself correctly reports 404. Current public source includes error handling, so its exact relationship to the deployed build is unconfirmed; do not claim a specific source line is proven responsible.",
       "fix": "Ensure the deployed article view maps 404 responses to a visible error state and provides a route back to the feed.",
-      "evidence": [
-        "missing-article-dom.txt",
-        "missing-article.jpg",
-        "missing-article-api.json"
-      ],
+      "evidence": ["missing-article-dom.txt", "missing-article.jpg", "missing-article-api.json"],
       "image": "missing-article.jpg"
-    },
-    {
-      "id": "QA-04",
-      "title": "Whitespace-only comments are accepted and persisted",
-      "severity": "Low",
-      "steps": "1. Sign in with a controlled account and open its article. 2. Enter three spaces in Write a comment. 3. Click Post Comment. 4. Reload the article.",
-      "expected": "Reject a comment with no non-whitespace content and display a clear validation message.",
-      "actual": "A visually empty comment card is created with author/date/delete metadata. It remains after refresh. The saved rendered paragraph contains only spaces.",
-      "impact": "Users can create empty discussion entries, cluttering the thread without meaningful content.",
-      "cause": "Missing whitespace normalization/non-empty validation is suspected. Persistence is verified through a browser refresh; backend implementation was not inspected.",
-      "fix": "Trim or validate non-whitespace content on the server and mirror that validation in the comment form.",
-      "evidence": [
-        "blank-comment-markup.html",
-        "blank-comment-before-refresh.jpg",
-        "blank-comment-persisted.jpg"
-      ],
-      "image": "blank-comment-persisted.jpg"
     },
     {
       "id": "QA-05",
@@ -88,6 +64,23 @@
         "blank-comment-markup.html"
       ],
       "image": "comment-keyboard-skip.jpg"
+    },
+    {
+      "id": "QA-04",
+      "title": "Whitespace-only comments are accepted and persisted",
+      "severity": "Low",
+      "steps": "1. Sign in with a controlled account and open its article. 2. Enter three spaces in Write a comment. 3. Click Post Comment. 4. Reload the article.",
+      "expected": "Reject a comment with no non-whitespace content and display a clear validation message.",
+      "actual": "A visually empty comment card is created with author/date/delete metadata. It remains after refresh. The saved rendered paragraph contains only spaces.",
+      "impact": "Users can create empty discussion entries, cluttering the thread without meaningful content.",
+      "cause": "Missing whitespace normalization/non-empty validation is suspected. Persistence is verified through a browser refresh; backend implementation was not inspected.",
+      "fix": "Trim or validate non-whitespace content on the server and mirror that validation in the comment form.",
+      "evidence": [
+        "blank-comment-markup.html",
+        "blank-comment-before-refresh.jpg",
+        "blank-comment-persisted.jpg"
+      ],
+      "image": "blank-comment-persisted.jpg"
     }
   ],
   "rootCause": "QA-05 prevents keyboard users from deleting their own comments. The problem occurs when a comment owned by the signed-in user displays its trash icon. In the live DOM, that control is an i element nested in a span, with tabIndex -1 and no button role or accessible label. Pressing Tab from the comment-author link moved focus directly to the footer link, skipping deletion. Clicking the same trash icon with the mouse successfully deleted the disposable comment, showing that the deletion path itself worked in this test. The immediate cause is therefore confirmed at the rendered-markup level: the interactive action lacks native keyboard semantics and focusability. Replace the control with a type=button element carrying an accessible Delete comment label and retain the existing handler, while hiding the decorative icon from assistive technology. Verify the fix by reaching the button with Tab, activating it separately with Enter and Space, checking a descriptive accessible name, and confirming that only the controlled user's intended comment disappears.",

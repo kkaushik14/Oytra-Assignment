@@ -6,10 +6,7 @@
       "name": "Schedule 5m Ping",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [
-        0,
-        0
-      ],
+      "position": [0, 0],
       "parameters": {
         "rule": {
           "interval": [
@@ -26,10 +23,7 @@
       "name": "Initialize Ping",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        240,
-        0
-      ],
+      "position": [240, 0],
       "parameters": {
         "jsCode": "\nconst timestamp = new Date().toISOString();\nconst targetUrl = 'https://demo.realworld.show';\nconst apiTarget = 'https://api.realworld.show/api/tags';\nreturn [{\n  json: {\n    timestamp,\n    targetUrl,\n    apiTarget,\n    startTime: Date.now(),\n    monitorVersion: '1.0.0'\n  }\n}];\n"
       }
@@ -39,10 +33,7 @@
       "name": "Ping Web App",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [
-        480,
-        0
-      ],
+      "position": [480, 0],
       "parameters": {
         "url": "={{ $json.targetUrl }}",
         "sendHeaders": true,
@@ -78,10 +69,7 @@
       "name": "Evaluate Health & Latency",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        720,
-        0
-      ],
+      "position": [720, 0],
       "parameters": {
         "jsCode": "\nconst init = $('Initialize Ping').first().json;\nconst httpRes = $input.first().json;\nconst durationMs = Date.now() - init.startTime;\n\nconst statusCode = httpRes.statusCode || (httpRes.error ? (httpRes.error.status || 500) : 200);\nconst isSuccess = statusCode >= 200 && statusCode < 300 && !httpRes.error;\nconst isDegraded = isSuccess && durationMs > 3000;\nconst statusCategory = !isSuccess ? 'DOWN' : (isDegraded ? 'DEGRADED' : 'HEALTHY');\n\nreturn [{\n  json: {\n    target: init.targetUrl,\n    timestamp: init.timestamp,\n    checkedAt: new Date().toISOString(),\n    durationMs,\n    statusCode,\n    isSuccess,\n    isDegraded,\n    statusCategory,\n    errorDetail: httpRes.error ? (httpRes.error.message || JSON.stringify(httpRes.error)) : null,\n    retriesConfigured: 3\n  }\n}];\n"
       }
@@ -91,10 +79,7 @@
       "name": "App Healthy?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        960,
-        0
-      ],
+      "position": [960, 0],
       "parameters": {
         "conditions": {
           "options": {
@@ -124,10 +109,7 @@
       "name": "Format Incident Alert",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1200,
-        160
-      ],
+      "position": [1200, 160],
       "parameters": {
         "jsCode": "\nconst data = $input.first().json;\nconst clean = s => String(s || '').replace(/@/g, '＠').slice(0, 150);\n\nconst lines = [\n  '🚨 **OYTRA UPTIME ALERT — SERVICE DOWN / UNRESPONSIVE**',\n  '',\n  '• **Target Application:** ' + clean(data.target),\n  '• **Status Code:** ' + data.statusCode + ' (Expected: 200 OK)',\n  '• **Response Latency:** ' + data.durationMs + ' ms',\n  '• **Health Category:** ' + data.statusCategory,\n  '• **Retries Attempted:** ' + data.retriesConfigured + ' tries with 2s backoff',\n  '• **Incident Timestamp:** ' + data.checkedAt,\n  data.errorDetail ? ('• **Error Detail:** ' + clean(data.errorDetail)) : '',\n  '',\n  '⚠️ **Action:** Verify cloud bucket, DNS routing, or web server container status.'\n].filter(Boolean);\n\nreturn [{ json: { ...data, content: lines.join('\\n'), alertType: 'INCIDENT' } }];\n"
       }
@@ -137,10 +119,7 @@
       "name": "Send Incident Alert",
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
-      "position": [
-        1440,
-        160
-      ],
+      "position": [1440, 160],
       "parameters": {
         "authentication": "webhook",
         "resource": "message",
@@ -157,10 +136,7 @@
       "name": "Log Incident Receipt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1680,
-        160
-      ],
+      "position": [1680, 160],
       "parameters": {
         "jsCode": "\nconst alert = $('Format Incident Alert').first().json;\nreturn [{\n  json: {\n    status: 'ALERT_DELIVERED',\n    category: alert.statusCategory,\n    target: alert.target,\n    recordedAt: new Date().toISOString()\n  }\n}];\n"
       }
@@ -170,10 +146,7 @@
       "name": "Format Heartbeat Pulse",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1200,
-        -140
-      ],
+      "position": [1200, -140],
       "parameters": {
         "jsCode": "\nconst data = $input.first().json;\nreturn [{\n  json: {\n    status: 'HEALTHY',\n    target: data.target,\n    statusCode: data.statusCode,\n    latencyMs: data.durationMs,\n    latencySLA: data.durationMs < 1000 ? 'EXCELLENT' : (data.durationMs < 3000 ? 'ACCEPTABLE' : 'SLOW'),\n    timestamp: data.checkedAt\n  }\n}];\n"
       }
@@ -274,10 +247,5 @@
   },
   "active": false,
   "pinData": {},
-  "tags": [
-    "uptime",
-    "bonus",
-    "monitoring",
-    "realworld"
-  ]
+  "tags": ["uptime", "bonus", "monitoring", "realworld"]
 }

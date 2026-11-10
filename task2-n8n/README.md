@@ -53,12 +53,12 @@ Any error → `Report failure` → `Respond failure` → `Mark execution failed`
 
 ## Verified test evidence (10 November 2026, Cloud n8n kkos-14)
 
-| Case | Input | Branch | Result |
-|---|---|---|---|
-| Priority | `automation`, threshold `1000` | Priority | ✅ Delivered to Discord, 5 repos, enrichment succeeded |
-| Standard | `automation`, threshold `10000000` | Standard | ✅ Delivered to Discord, 5 repos, enrichment succeeded |
-| Empty | nonexistent topic | No results | ✅ Delivered no-results notice, enrichment skipped |
-| Validation failure | threshold `99999999` | Error | ✅ HTTP 502, execution marked failed |
+| Case               | Input                              | Branch     | Result                                                 |
+| ------------------ | ---------------------------------- | ---------- | ------------------------------------------------------ |
+| Priority           | `automation`, threshold `1000`     | Priority   | ✅ Delivered to Discord, 5 repos, enrichment succeeded |
+| Standard           | `automation`, threshold `10000000` | Standard   | ✅ Delivered to Discord, 5 repos, enrichment succeeded |
+| Empty              | nonexistent topic                  | No results | ✅ Delivered no-results notice, enrichment skipped     |
+| Validation failure | threshold `99999999`               | Error      | ✅ HTTP 502, execution marked failed                   |
 
 Canvas screenshot is saved at `screenshots/Task2_Workflow_Canvas.png` (high-resolution capture from Cloud instance). `Task2_Successful_Execution.png` represents the execution details panel.
 

@@ -4,12 +4,18 @@
   "description": "Oytra Automation & QA Developer Take-Home Skills Assessment",
   "private": true,
   "scripts": {
-    "test": "node scripts/test-workflow-code.cjs && node scripts/test-bonus-workflow.cjs",
+    "start": "node scripts/start.cjs",
+    "test": "node scripts/start.cjs",
     "test:workflow": "node scripts/test-workflow-code.cjs",
     "test:bonus": "node scripts/test-bonus-workflow.cjs",
     "build:workflow": "node scripts/build-workflow.cjs",
-    "build:bonus": "node scripts/build-bonus-workflow.cjs"
+    "build:bonus": "node scripts/build-bonus-workflow.cjs",
+    "format": "prettier --write \"**/*.{js,cjs,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,cjs,json,md}\""
   },
   "author": "Kumar Kaushik <kumarkaushik871@gmail.com>",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "prettier": "3.9.10"
+  }
 }

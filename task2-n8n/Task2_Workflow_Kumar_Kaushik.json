@@ -6,10 +6,7 @@
       "name": "Digest webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [
-        0,
-        0
-      ],
+      "position": [0, 0],
       "parameters": {
         "httpMethod": "POST",
         "path": "oytra-repository-digest",
@@ -23,10 +20,7 @@
       "name": "Configure request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        220,
-        0
-      ],
+      "position": [220, 0],
       "parameters": {
         "jsCode": "const body = $input.first().json.body ?? {};\nconst topic = String(body.topic ?? 'automation').trim().toLowerCase();\nconst threshold = Number(body.threshold ?? 1000);\nif (!/^[a-z0-9][a-z0-9-]{0,49}$/.test(topic)) {\n  throw new Error('Topic must contain 1–50 lowercase letters, digits or hyphens.');\n}\nif (!Number.isFinite(threshold) || threshold < 0 || threshold > 10000000) {\n  throw new Error('Threshold must be a number between 0 and 10000000.');\n}\nreturn [{ json: { topic, threshold, requestedAt: new Date().toISOString() } }];\n"
       },
@@ -37,10 +31,7 @@
       "name": "Search GitHub",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [
-        440,
-        0
-      ],
+      "position": [440, 0],
       "parameters": {
         "url": "https://api.github.com/search/repositories",
         "sendQuery": true,
@@ -92,10 +83,7 @@
       "name": "Normalize top five",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        660,
-        0
-      ],
+      "position": [660, 0],
       "parameters": {
         "jsCode": "const response = $input.first().json;\nconst config = $('Configure request').first().json;\nif (!Array.isArray(response.items)) throw new Error('GitHub response is missing the items array.');\nconst seen = new Set();\nconst valid = response.items.filter(repo => {\n  if (!repo || typeof repo.full_name !== 'string' || !repo.owner?.login || !repo.name ||\n      typeof repo.html_url !== 'string' || !repo.html_url.startsWith('https://github.com/') ||\n      !Number.isFinite(repo.stargazers_count) || repo.stargazers_count < 0 ||\n      seen.has(repo.full_name)) return false;\n  seen.add(repo.full_name);\n  return true;\n});\nif (response.items.length && !valid.length) throw new Error('All repositories were malformed.');\nconst repositories = valid.sort((a,b) => b.stargazers_count-a.stargazers_count).slice(0,5).map(repo => ({\n  name:repo.name, owner:repo.owner.login, fullName:repo.full_name,\n  description:typeof repo.description === 'string' ? repo.description : 'No description provided',\n  stars:repo.stargazers_count, language:repo.language ?? 'Not specified',\n  url:repo.html_url, updatedAt:repo.updated_at ?? null,\n}));\nreturn [{json:{...config,repositories,count:repositories.length,\n  skipped:response.items.length-valid.length,incompleteResults:response.incomplete_results === true}}];\n"
       },
@@ -106,10 +94,7 @@
       "name": "Any results?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        880,
-        0
-      ],
+      "position": [880, 0],
       "parameters": {
         "conditions": {
           "options": {
@@ -139,10 +124,7 @@
       "name": "Get language breakdown",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [
-        1100,
-        -100
-      ],
+      "position": [1100, -100],
       "parameters": {
         "url": "={{ \"https://api.github.com/repos/\" + encodeURIComponent($json.repositories[0].owner) + \"/\" + encodeURIComponent($json.repositories[0].name) + \"/languages\" }}",
         "sendHeaders": true,
@@ -173,10 +155,7 @@
       "name": "Combine enrichment",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1320,
-        -100
-      ],
+      "position": [1320, -100],
       "parameters": {
         "jsCode": "const base = $('Normalize top five').first().json;\nconst result = $input.first().json;\nconst entries = Object.entries(result).filter(([name,bytes]) => name !== 'error' && typeof bytes === 'number' && Number.isFinite(bytes) && bytes > 0);\nconst total = entries.reduce((sum,[,bytes]) => sum+bytes,0);\nconst languages = entries.sort((a,b)=>b[1]-a[1]).slice(0,3).map(([name,bytes]) => ({name,bytes,percent:Math.round(bytes/total*1000)/10}));\nreturn [{json:{...base,topStars:base.repositories[0].stars,\n  enrichment:{status:result.error ? 'unavailable' : (total ? 'ok' : 'no-language-data'),\n    repository:base.repositories[0].fullName,languages}}}];\n"
       },
@@ -187,10 +166,7 @@
       "name": "Popularity threshold",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [
-        1540,
-        -100
-      ],
+      "position": [1540, -100],
       "parameters": {
         "conditions": {
           "options": {
@@ -220,10 +196,7 @@
       "name": "Priority digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1760,
-        -200
-      ],
+      "position": [1760, -200],
       "parameters": {
         "jsCode": "return [{json:{...$input.first().json,priority:'high'}}];"
       }
@@ -233,10 +206,7 @@
       "name": "Standard digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1760,
-        0
-      ],
+      "position": [1760, 0],
       "parameters": {
         "jsCode": "return [{json:{...$input.first().json,priority:'standard'}}];"
       }
@@ -246,10 +216,7 @@
       "name": "No results notice",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1100,
-        180
-      ],
+      "position": [1100, 180],
       "parameters": {
         "jsCode": "return [{json:{...$input.first().json,priority:'empty'}}];"
       }
@@ -259,10 +226,7 @@
       "name": "Format digest",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1980,
-        0
-      ],
+      "position": [1980, 0],
       "parameters": {
         "jsCode": "const data = $input.first().json;\n// The branch nodes supply a distinct priority value before formatting.\nconst clean = value => String(value).replace(/@/g,'＠').replace(/[\\r\\n]/g,' ').replace(/[`*_~<>]/g,'').slice(0,160);\nconst title = data.priority === 'high' ? 'PRIORITY — GitHub Repository Digest' :\n  data.priority === 'empty' ? 'GitHub Repository Digest — No results' : 'STANDARD — GitHub Repository Digest';\nconst lines = [title,`Topic: ${data.topic} | ${data.requestedAt}`,`Popularity rule: top repository stars > ${data.threshold}`, ''];\nif (!data.count) lines.push('No matching repositories were returned. No enrichment was attempted.');\nfor (const [index,repo] of data.repositories.entries()) {\n  lines.push(`${index+1}. ${clean(repo.fullName)} — ${repo.stars} stars · ${clean(repo.language)}`,repo.url);\n}\nif (data.enrichment) {\n  lines.push('',`Language enrichment for ${clean(data.enrichment.repository)}:`);\n  lines.push(data.enrichment.status === 'ok' ? data.enrichment.languages.map(x=>`${clean(x.name)} ${x.percent}%`).join(', ') : 'Unavailable; original repository information retained.');\n}\nif (data.incompleteResults) lines.push('Warning: GitHub reported incomplete search results.');\nif (data.skipped) lines.push(`Skipped ${data.skipped} invalid or duplicate result(s).`);\nif (data.count && data.count < 5) lines.push(`Only ${data.count} valid matching repositories were available.`);\nconst content = lines.join('\\n');\nif (content.length > 2000) throw new Error('Digest exceeds Discord message limit.');\nreturn [{json:{...data,content}}];\n"
       },
@@ -273,10 +237,7 @@
       "name": "Send Discord digest",
       "type": "n8n-nodes-base.discord",
       "typeVersion": 2,
-      "position": [
-        2200,
-        0
-      ],
+      "position": [2200, 0],
       "parameters": {
         "authentication": "webhook",
         "resource": "message",
@@ -293,10 +254,7 @@
       "name": "Delivery receipt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        2420,
-        0
-      ],
+      "position": [2420, 0],
       "parameters": {
         "jsCode": "const message=$input.first().json; const digest=$('Format digest').first().json; if(!message.id) throw new Error('Discord did not return a message ID.'); return [{json:{status:'delivered',priority:digest.priority,count:digest.count,topic:digest.topic,enrichment:digest.enrichment?.status ?? 'not-attempted',messageId:message.id,executionId:$execution.id}}];"
       },
@@ -307,10 +265,7 @@
       "name": "Respond success",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [
-        2640,
-        0
-      ],
+      "position": [2640, 0],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ $json }}",
@@ -324,10 +279,7 @@
       "name": "Report failure",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1980,
-        400
-      ],
+      "position": [1980, 400],
       "parameters": {
         "jsCode": "return [{json:{status:'failed',message:'Request processing or notification delivery failed. Inspect this execution for the failing node.',executionId:$execution.id}}];"
       }
@@ -337,10 +289,7 @@
       "name": "Respond failure",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [
-        2200,
-        400
-      ],
+      "position": [2200, 400],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ $json }}",
@@ -354,10 +303,7 @@
       "name": "Mark execution failed",
       "type": "n8n-nodes-base.stopAndError",
       "typeVersion": 1,
-      "position": [
-        2420,
-        400
-      ],
+      "position": [2420, 400],
       "parameters": {
         "errorType": "errorMessage",
         "errorMessage": "={{ $json.message }}"

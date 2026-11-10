@@ -13,7 +13,11 @@ async function request(path, options = {}) {
   const response = await fetch(`${api}${path}`, options);
   const text = await response.text();
   let body;
-  try { body = text ? JSON.parse(text) : {}; } catch { body = { nonJson: true }; }
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    body = { nonJson: true };
+  }
   return { status: response.status, body };
 }
 
@@ -31,7 +35,8 @@ async function login(user) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ user: { email: user.email, password: user.password } }),
   });
-  if (result.status !== 200 || !result.body.user?.token) throw new Error(`Controlled account login failed: HTTP ${result.status}`);
+  if (result.status !== 200 || !result.body.user?.token)
+    throw new Error(`Controlled account login failed: HTTP ${result.status}`);
   return result.body.user.token;
 }
 
@@ -41,34 +46,47 @@ function auth(token) {
 
 (async () => {
   const createdB = await register(accountB);
-  if (createdB.status !== 201) throw new Error(`Controlled account B creation failed: HTTP ${createdB.status}`);
+  if (createdB.status !== 201)
+    throw new Error(`Controlled account B creation failed: HTTP ${createdB.status}`);
   const tokenA = await login(accountA);
   const tokenB = await login(accountB);
   const created = await request('/articles', {
     method: 'POST',
     headers: auth(tokenA),
-    body: JSON.stringify({ article: {
-      title: `OYTRA QA authorization ${runId}`,
-      description: 'Disposable controlled ownership test',
-      body: 'This clearly labelled QA article will be removed at the end of the test.',
-      tagList: ['oytra-qa', 'authorization-test'],
-    } }),
+    body: JSON.stringify({
+      article: {
+        title: `OYTRA QA authorization ${runId}`,
+        description: 'Disposable controlled ownership test',
+        body: 'This clearly labelled QA article will be removed at the end of the test.',
+        tagList: ['oytra-qa', 'authorization-test'],
+      },
+    }),
   });
-  if (created.status !== 201 || !created.body.article?.slug) throw new Error(`Controlled article creation failed: HTTP ${created.status}`);
+  if (created.status !== 201 || !created.body.article?.slug)
+    throw new Error(`Controlled article creation failed: HTTP ${created.status}`);
   const slug = created.body.article.slug;
 
   const readAsB = await request(`/articles/${encodeURIComponent(slug)}`, { headers: auth(tokenB) });
   const updateAsB = await request(`/articles/${encodeURIComponent(slug)}`, {
-    method: 'PUT', headers: auth(tokenB),
+    method: 'PUT',
+    headers: auth(tokenB),
     body: JSON.stringify({ article: { title: `UNAUTHORIZED CHANGE ${runId}` } }),
   });
   const updatedSlug = updateAsB.body.article?.slug ?? slug;
-  const deleteAsB = await request(`/articles/${encodeURIComponent(updatedSlug)}`, { method: 'DELETE', headers: auth(tokenB) });
+  const deleteAsB = await request(`/articles/${encodeURIComponent(updatedSlug)}`, {
+    method: 'DELETE',
+    headers: auth(tokenB),
+  });
 
-  const afterAsA = await request(`/articles/${encodeURIComponent(updatedSlug)}`, { headers: auth(tokenA) });
+  const afterAsA = await request(`/articles/${encodeURIComponent(updatedSlug)}`, {
+    headers: auth(tokenA),
+  });
   let cleanup = 'not-needed';
   if (afterAsA.status === 200) {
-    const cleaned = await request(`/articles/${encodeURIComponent(slug)}`, { method: 'DELETE', headers: auth(tokenA) });
+    const cleaned = await request(`/articles/${encodeURIComponent(slug)}`, {
+      method: 'DELETE',
+      headers: auth(tokenA),
+    });
     cleanup = `HTTP ${cleaned.status}`;
   }
 
@@ -81,13 +99,16 @@ function auth(token) {
     AReadAfterBMutations: `HTTP ${afterAsA.status}`,
     readAuthorIsAccountA: readAsB.body.article?.author?.username === accountA.username,
     updateAppliedRequestedTitle: updateAsB.body.article?.title === `UNAUTHORIZED CHANGE ${runId}`,
-    updateResponseAuthor: updateAsB.body.article?.author?.username === accountA.username ? 'account-a' : 'other-or-missing',
+    updateResponseAuthor:
+      updateAsB.body.article?.author?.username === accountA.username
+        ? 'account-a'
+        : 'other-or-missing',
     cleanup,
     crossAccountWriteObserved: updateAsB.status >= 200 && updateAsB.status < 300,
     crossAccountDeleteObserved: deleteAsB.status >= 200 && deleteAsB.status < 300,
   };
   console.log(JSON.stringify(summary, null, 2));
-})().catch(error => {
+})().catch((error) => {
   console.error(error.message);
   process.exitCode = 1;
 });

@@ -1,0 +1,10 @@
+node_modules/
+.runtime/
+.private/
+.git/
+*.pdf
+*.png
+*.jpeg
+*.jpg
+package-lock.json
+task1-qa/evidence/

@@ -18,15 +18,15 @@ Budget: 120 minutes. Target finish: 05:40:48 IST.
 
 ## Decision log
 
-| Decision | Options | Selected approach | Reason | Approval |
-|---|---|---|---|---|
-| Testing target | Live RealWorld / local implementation | Continue checking live RealWorld | Demo loads; avoid setup overhead | Within supplied starting approach |
-| n8n environment | Existing instance / isolated local installation | Isolated local n8n 2.46.7 in .runtime/n8n | User approved; installed Node 24.21.0 satisfies package metadata | User approved |
-| Notification | Discord / Slack / email | Proposed first delivery to Discord test channel | User says all three are available; one working destination meets mandatory scope | Specific channel pending |
-| QA test data | Existing accounts / synthetic accounts | Two synthetic @example.com accounts and clearly labelled disposable content | Controlled ownership tests | User explicitly approved creation/edit/deletion |
-| API and trigger | GitHub / other; webhook / schedule | Proposed GitHub + webhook | Repeatable demonstration with public data | To confirm at design stage |
-| Publication | Local artifacts / public GitHub | Local preparation only | Final review required | Publication pending |
-| Bonus | Attempt / skip | Deferred | Mandatory deliverables first | Pending budget review |
+| Decision        | Options                                         | Selected approach                                                           | Reason                                                                           | Approval                                        |
+| --------------- | ----------------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Testing target  | Live RealWorld / local implementation           | Continue checking live RealWorld                                            | Demo loads; avoid setup overhead                                                 | Within supplied starting approach               |
+| n8n environment | Existing instance / isolated local installation | Isolated local n8n 2.46.7 in .runtime/n8n                                   | User approved; installed Node 24.21.0 satisfies package metadata                 | User approved                                   |
+| Notification    | Discord / Slack / email                         | Proposed first delivery to Discord test channel                             | User says all three are available; one working destination meets mandatory scope | Specific channel pending                        |
+| QA test data    | Existing accounts / synthetic accounts          | Two synthetic @example.com accounts and clearly labelled disposable content | Controlled ownership tests                                                       | User explicitly approved creation/edit/deletion |
+| API and trigger | GitHub / other; webhook / schedule              | Proposed GitHub + webhook                                                   | Repeatable demonstration with public data                                        | To confirm at design stage                      |
+| Publication     | Local artifacts / public GitHub                 | Local preparation only                                                      | Final review required                                                            | Publication pending                             |
+| Bonus           | Attempt / skip                                  | Deferred                                                                    | Mandatory deliverables first                                                     | Pending budget review                           |
 
 ## Evidence rules
 
