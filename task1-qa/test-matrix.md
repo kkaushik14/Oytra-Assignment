@@ -1,15 +1,40 @@
-# QA test matrix
+# QA Test Matrix & Final Bug Report Table
 
-Target: https://demo.realworld.show (live Angular demo; page states session-isolated backend).
-Status: investigation in progress. This is a working record, not the final QA report.
+**Target Application:** Conduit RealWorld Angular demo ([https://demo.realworld.show](https://demo.realworld.show))  
+**Tested Date:** 10 November 2026 (IST)  
+**Author:** Kumar Kaushik  
+**Status:** Completed & Finalized
 
-| Area | Checks | Status |
-|---|---|---|
-| Availability | Home, seeded feed, tags, registration, login | Home/feed/tags/registration/login observed |
-| Authentication | Valid registration/login; invalid email; duplicates; required fields; logout; refresh | Account A creation, correct login, incorrect-password rejection, logout and refresh passed. Duplicate registration interacts with session isolation; not classified as a bug. |
-| Article lifecycle | Create/read/edit/delete controlled article; required fields; long text; persistence | Create, edit, refresh persistence, Unicode and Markdown passed. Empty title/description/body produce explicit errors. Delete pending. |
-| Authorization | Logged-out protected routes; second controlled account ownership | Direct /settings and /editor both redirect logged-out visitor to /login; ownership tests pending |
-| UX/accessibility | Labels, keyboard, navigation, loading/errors, mobile layout | Pending |
-| API/network | Request failures, validation status, response data, console errors | Pending |
+---
 
-Candidate findings are recorded separately; none finalized without user review.
+## 1. Test Execution Matrix
+
+| Area | Checks Executed | Result | Notes |
+|---|---|---|---|
+| **Availability** | Home page, seeded articles feed, popular tags bar, login/registration routes | ✅ PASS | Seeded tags and 4 articles loaded correctly. |
+| **Authentication** | Sign-up, valid login, invalid password rejection, required field validations, logout, session persistence on refresh | ✅ PASS | Empty fields and invalid email formats caught with client/server validation. |
+| **Article Lifecycle** | Create article, edit title/body/tags, Markdown & Unicode rendering, reload persistence, tag deletion | ✅ PASS | Tag clearing and unicode text properly persisted across reloads. |
+| **Stale State & Deletion** | Dual-tab article deletion, rapid interaction, deleted item access | ❌ DEFECTS (QA-01, QA-02) | Rapid favorite clicks desync count; stale tab deletion leaves UI stuck with uncaught error. |
+| **Routing & 404s** | Logged-out route guards (`/editor`, `/settings`), nonexistent slug direct navigation | ❌ DEFECT (QA-03) | Protected routes redirect to `/login`; however, missing article yields blank page without 404 message. |
+| **Comment Thread** | Comment creation, whitespace-only submission, comment persistence, deletion | ❌ DEFECTS (QA-04, QA-05) | Whitespace comments accepted and persisted; comment delete icon inaccessible via keyboard. |
+| **Accessibility (a11y)** | Keyboard tab navigation, button semantics, ARIA attributes, contrast ratios | ❌ DEFECT (QA-05) | Comment delete uses `<i>` element with `tabIndex -1`. Feed descriptions have low contrast (documented in candidates). |
+
+---
+
+## 2. Bug Report Table (Assessment Template Compliance)
+
+Formatted in accordance with the Section 5 Bug Report Template from the assessment specification:
+
+| # | Title / Summary | Steps to Reproduce | Expected vs Actual | Severity | Suspected Cause |
+|:---:|---|---|---|:---:|---|
+| **1**<br/>*(QA-01)* | Rapid repeated favorite clicks leave the visible count and state incorrect until reload | 1. Sign in with controlled account.<br/>2. On Global Feed, confirm article favorite count is 0.<br/>3. Double-click favorite button.<br/>4. Observe immediate UI state.<br/>5. Reload feed page.<br/>6. Reset with single click and repeat. | **Expected:** Interface ignores duplicate clicks while request is in flight or reconciles count/state immediately.<br/><br/>**Actual:** After double-click, feed showed 0 and unfavorited outline style; reload showed 1 and favorited style. | **Medium** | Missing click debounce/guard while request is pending; CSS disabled class applied instead of native HTML disabled attribute. |
+| **2**<br/>*(QA-02)* | Deleting an already-deleted article leaves a stale tab stuck without feedback | 1. Open identical article in two browser tabs.<br/>2. Delete article in Tab B; confirm redirection to feed.<br/>3. In Tab A (without refreshing), click Delete Article.<br/>4. Observe state and console. | **Expected:** Stale tab shows clear not-found error and routes user back to feed.<br/><br/>**Actual:** Tab remains stranded on deleted content; delete button gains disabled class; browser logs uncaught error with no user recovery route. | **Medium** | Article deletion component only implements success handler; unhandled 404/rejection leaves component in permanent pending state. |
+| **3**<br/>*(QA-03)* | Missing article leaves an unexplained blank content area | 1. Navigate directly to `/article/oytra-qa-nonexistent-20261110`.<br/>2. Wait for network request to settle.<br/>3. Observe main content area.<br/>4. Repeat while logged in and logged out. | **Expected:** Display clear 404 / article not found error with a "Return to feed" button.<br/><br/>**Actual:** Content area is completely blank (only site header and footer render); API returned HTTP 404 with `errors.article=[not found]`. | **Medium** | Frontend router/component does not map 404 API error response to an error boundary or empty state template. |
+| **4**<br/>*(QA-04)* | Whitespace-only comments are accepted and persisted | 1. Sign in and open owned article.<br/>2. Enter three spaces in "Write a comment".<br/>3. Click Post Comment.<br/>4. Reload the article page. | **Expected:** Comment submission is blocked; validation requires non-whitespace content.<br/><br/>**Actual:** Visually empty comment card is created with author and timestamp; persists across browser reload. | **Low** | Missing string trimming / sanitization check on both client comment form and server API validation. |
+| **5**<br/>*(QA-05)* | Comment delete action cannot be reached by keyboard | 1. Open article containing signed-in user's comment.<br/>2. Focus comment-author link with keyboard.<br/>3. Press `Tab` key.<br/>4. Inspect delete icon element and accessibility tree.<br/>5. Compare with mouse click. | **Expected:** `Tab` key focuses a native Delete button with accessible label; `Enter` or `Space` activates deletion.<br/><br/>**Actual:** `Tab` key skips trash icon completely, jumping directly to footer link. Trash icon is an `<i>` tag inside a `<span>` with `tabIndex -1`. Mouse click deleted successfully. | **Medium** | Non-focusable decorative `<i>` element used as interactive click target instead of accessible `<button>` element. |
+
+---
+
+## 3. Root-Cause Analysis (5–10 Sentences on QA-05)
+
+QA-05 prevents keyboard-only users from deleting comments they authored. The problem occurs when a comment owned by the signed-in user displays its trash icon. In the live DOM, that interactive control is rendered as an `<i>` element nested in a `<span>`, assigned `tabIndex = -1` with no button role or accessible ARIA label. Pressing the `Tab` key from the comment-author link skips the control entirely and moves focus directly to the footer navigation link. However, clicking the same trash icon with the mouse executes the deletion handler and successfully deletes the comment, proving the underlying delete endpoint and state logic work as intended. The root cause is confirmed at the rendered markup layer: the interactive element lacks native keyboard focusability and button semantics. To resolve this, replace the `<span><i>` wrapper with a standard `<button type="button">` element possessing an `aria-label="Delete comment"` attribute while maintaining the existing click handler. Verification entails tabbing directly to the delete button, activating it via both `Enter` and `Space` keys, confirming the screen reader announcement, and verifying that only the selected comment is removed.

@@ -1,0 +1,15 @@
+{
+  "name": "oytra-assignment",
+  "version": "1.0.0",
+  "description": "Oytra Automation & QA Developer Take-Home Skills Assessment",
+  "private": true,
+  "scripts": {
+    "test": "node scripts/test-workflow-code.cjs && node scripts/test-bonus-workflow.cjs",
+    "test:workflow": "node scripts/test-workflow-code.cjs",
+    "test:bonus": "node scripts/test-bonus-workflow.cjs",
+    "build:workflow": "node scripts/build-workflow.cjs",
+    "build:bonus": "node scripts/build-bonus-workflow.cjs"
+  },
+  "author": "Kumar Kaushik <kumarkaushik871@gmail.com>",
+  "license": "UNLICENSED"
+}

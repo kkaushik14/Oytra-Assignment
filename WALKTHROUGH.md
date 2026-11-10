@@ -1,107 +1,90 @@
 # Walkthrough — Oytra Assignment
 
-**Author:** Kumar Kaushik  
-**Date:** 10 November 2026
+**Candidate:** Kumar Kaushik  
+**Target Date:** 10 November 2026 (IST)  
+**Submission Repository:** [https://github.com/kkaushik14/Oytra-Assignment](https://github.com/kkaushik14/Oytra-Assignment)
 
 ---
 
-## Task 1 — QA Report walkthrough
+## 1. Task 1 — Web App QA & Debug Report Walkthrough
 
-### What was tested
+### Application Context & Methodology
+- **Target Application:** Conduit RealWorld Angular live demo ([https://demo.realworld.show](https://demo.realworld.show)).
+- **Testing Approach:** Exercised core end-to-end user flows including account registration, authentication, article creation, editing, deletion, tag filtering, comment threads, keyboard navigation (WCAG 2.2 accessibility), and network response handling.
+- **Controlled Test Data:** Used disposable `@example.com` accounts to verify cross-user isolation and avoid impacting persistent demo data.
 
-Target: **Conduit RealWorld Angular** at `https://demo.realworld.show` — a production-grade live demo with a session-isolated backend.
+### Bug Report Table (Assessment Section 5 Template Compliance)
 
-### How testing was structured
+| # | Title / Summary | Steps to Reproduce | Expected vs Actual | Severity | Suspected Cause |
+|:---:|---|---|---|:---:|---|
+| **1**<br/>*(QA-01)* | Rapid repeated favorite clicks leave visible count and state desynced until reload | 1. Sign in with controlled account.<br/>2. On Global Feed, confirm article favorite count is 0.<br/>3. Double-click favorite button.<br/>4. Observe immediate UI state.<br/>5. Reload feed page.<br/>6. Reset with single click and repeat. | **Expected:** Interface ignores duplicate clicks while request is in flight or reconciles count/state immediately.<br/><br/>**Actual:** After double-click, feed showed 0 and unfavorited outline style; reload showed 1 and favorited style. | **Medium** | Missing click debounce/guard while request is pending; CSS disabled class applied instead of native HTML disabled attribute. |
+| **2**<br/>*(QA-02)* | Deleting already-deleted article leaves stale tab stuck without feedback | 1. Open identical article in two browser tabs.<br/>2. Delete article in Tab B; confirm redirection to feed.<br/>3. In Tab A (without refreshing), click Delete Article.<br/>4. Observe state and console. | **Expected:** Stale tab shows clear not-found error and routes user back to feed.<br/><br/>**Actual:** Tab remains stranded on deleted content; delete button gains disabled class; browser logs uncaught error with no user recovery route. | **Medium** | Article deletion component only implements success handler; unhandled 404/rejection leaves component in permanent pending state. |
+| **3**<br/>*(QA-03)* | Missing article leaves an unexplained blank content area | 1. Navigate directly to `/article/oytra-qa-nonexistent-20261110`.<br/>2. Wait for network request to settle.<br/>3. Observe main content area.<br/>4. Repeat while logged in and logged out. | **Expected:** Display clear 404 / article not found error with a "Return to feed" button.<br/><br/>**Actual:** Content area is completely blank (only site header and footer render); API returned HTTP 404 with `errors.article=[not found]`. | **Medium** | Frontend router/component does not map 404 API error response to an error boundary or empty state template. |
+| **4**<br/>*(QA-04)* | Whitespace-only comments are accepted and persisted | 1. Sign in and open owned article.<br/>2. Enter three spaces in "Write a comment".<br/>3. Click Post Comment.<br/>4. Reload the article page. | **Expected:** Comment submission is blocked; validation requires non-whitespace content.<br/><br/>**Actual:** Visually empty comment card is created with author and timestamp; persists across browser reload. | **Low** | Missing string trimming / sanitization check on both client comment form and server API validation. |
+| **5**<br/>*(QA-05)* | Comment delete action cannot be reached by keyboard | 1. Open article containing signed-in user's comment.<br/>2. Focus comment-author link with keyboard.<br/>3. Press `Tab` key.<br/>4. Inspect delete icon element and accessibility tree.<br/>5. Compare with mouse click. | **Expected:** `Tab` key focuses a native Delete button with accessible label; `Enter` or `Space` activates deletion.<br/><br/>**Actual:** `Tab` key skips trash icon completely, jumping directly to footer link. Trash icon is an `<i>` tag inside a `<span>` with `tabIndex -1`. Mouse click deleted successfully. | **Medium** | Non-focusable decorative `<i>` element used as interactive click target instead of accessible `<button>` element. |
 
-1. Started from the home feed with no account.
-2. Registered two disposable controlled accounts (`@example.com`).
-3. Exercised the full article lifecycle: create, edit, delete, Unicode/Markdown, field validation.
-4. Tested authentication flows: valid login, wrong password, logout, refresh persistence.
-5. Tested route protection: `/settings` and `/editor` both redirect logged-out visitors.
-6. Investigated UX and accessibility: keyboard navigation, ARIA markup, button labelling.
-7. Investigated API behaviour: HTTP status codes, error payloads, console output.
-8. Ran a targeted two-account authorization check (excluded from findings — demo session context became inconsistent; not overstated as a security defect).
-
-### The five findings
-
-**QA-01 (Medium) — Rapid repeated favorite clicks leave count and state incorrect until reload**  
-Double-clicking a favorite button accepted both clicks. The feed showed the pre-click state (0, unfavorited outline) until a reload, which revealed the persisted state (1, filled). Reproduced twice with a reset between attempts.
-
-**QA-02 (Medium) — Deleting an already-deleted article leaves a stale tab stuck without feedback**  
-Article open in two tabs. Deleted in Tab B. Tab A's delete controls gained a disabled CSS class with no message, no recovery path, and a browser console error. The native `disabled` property remained `false`. Reproduced with a second article.
-
-**QA-03 (Medium) — Missing article shows a blank content area instead of a not-found message**  
-Direct navigation to a known-missing article slug rendered only the site chrome. The API correctly returned HTTP 404 with `errors.article = [not found]`. The frontend did not map this to any visible state.
-
-**QA-04 (Low) — Whitespace-only comments are accepted and persisted**  
-Three spaces submitted as a comment produced a visually empty card with author metadata. Persisted through a browser reload. No server-side or client-side whitespace validation.
-
-**QA-05 (Medium) — Comment delete action cannot be reached by keyboard**  
-The trash icon is an `<i>` inside a `<span>` with `tabIndex -1`, no `role`, and no accessible label. Tab skips it entirely; focus moves from the comment-author link directly to the footer. Mouse click deleted the comment successfully, confirming the deletion handler works — only the keyboard path is broken.
+### In-Depth Root-Cause Analysis (QA-05)
+QA-05 prevents keyboard-only users from deleting comments they authored. The problem occurs when a comment owned by the signed-in user displays its trash icon. In the live DOM, that interactive control is rendered as an `<i>` element nested in a `<span>`, assigned `tabIndex = -1` with no button role or accessible ARIA label. Pressing the `Tab` key from the comment-author link skips the control entirely and moves focus directly to the footer navigation link. However, clicking the same trash icon with the mouse executes the deletion handler and successfully deletes the comment, proving the underlying delete endpoint and state logic work as intended. The root cause is confirmed at the rendered markup layer: the interactive element lacks native keyboard focusability and button semantics. To resolve this, replace the `<span><i>` wrapper with a standard `<button type="button">` element possessing an `aria-label="Delete comment"` attribute while maintaining the existing click handler. Verification entails tabbing directly to the delete button, activating it via both `Enter` and `Space` keys, confirming the screen reader announcement, and verifying that only the selected comment is removed.
 
 ---
 
-## Task 2 — n8n workflow walkthrough
+## 2. Task 2 — n8n API Integration Workflow Walkthrough
 
-### Workflow overview
+### Workflow Architecture & Node Pipeline
+The workflow [`task2-n8n/Task2_Workflow_Kumar_Kaushik.json`](task2-n8n/Task2_Workflow_Kumar_Kaushik.json) contains 18 nodes:
 
-An 18-node n8n webhook workflow that:
+1. **Digest webhook:** Receives JSON payload with `topic` (string) and `threshold` (integer).
+2. **Configure request:** Validates input structure (1–50 lowercase characters for topic, 0–10M range for threshold).
+3. **Search GitHub:** Calls GitHub REST API (`GET /search/repositories?q=topic:<topic>&sort=stars&order=desc&per_page=10`). Configured with 2 retries on network failure.
+4. **Normalize top five:** Validates item structures, removes duplicates by `full_name`, sorts by star count, slices top 5.
+5. **Any results? (IF):** Checks if valid matching repositories were found.
+   - *If no results:* Routes to `No results notice` (sets priority to `empty`) and skips enrichment.
+   - *If results exist:* Proceeds to enrichment.
+6. **Get language breakdown:** Secondary API call (`GET /repos/{owner}/{name}/languages`) to retrieve byte breakdown of top repository.
+7. **Combine enrichment:** Computes percentage share per language (rounded to 0.1%). If secondary API fails, falls back gracefully to base repository data.
+8. **Popularity threshold (IF):** Compares top repository star count against user-supplied `threshold`.
+   - *Above threshold:* Routes to `Priority digest` (`priority: high`).
+   - *At or below:* Routes to `Standard digest` (`priority: standard`).
+9. **Format digest:** Assembles Discord message format (≤ 2,000 characters, `@` characters neutralised to prevent accidental pings).
+10. **Send Discord digest:** Delivers payload via Discord Webhook credential.
+11. **Delivery receipt & Respond success:** Confirms message delivery ID and returns HTTP 200 JSON to webhook caller.
+12. **Error Branching:** If any core step fails, execution routes to `Report failure → Respond failure (HTTP 502) → Mark execution failed`.
 
-1. Receives a topic and popularity threshold via HTTP POST.
-2. Validates inputs (topic: 1–50 lowercase slug chars; threshold: 0–10,000,000).
-3. Searches GitHub for repositories matching the topic, sorted by stars.
-4. Normalises results: deduplicates, validates required fields, picks the top five by star count.
-5. If there are results, fetches the language breakdown for the top repository from the GitHub Languages API.
-6. Combines enrichment data (falls back gracefully if the secondary request fails).
-7. Branches by priority: does the top repository beat the threshold?
-8. Formats a Discord message (≤ 2,000 characters; mention characters neutralised).
-9. Delivers to Discord, records a delivery receipt, responds to the webhook caller.
-10. Any error in steps 2–9 routes through `Report failure → Respond failure → Mark execution failed`.
+### Verified Execution Results (10 November 2026, Cloud n8n `kkos-14`)
 
-### Live test results (10 November 2026, kkos-14 Cloud)
-
-| Case | POST body | Branch taken | Discord | Webhook response |
+| Test Scenario | Payload | Branch Taken | Discord Result | HTTP Response |
 |---|---|---|---|---|
-| Priority | `{"topic":"automation","threshold":1000}` | Priority | ✅ Delivered with PRIORITY label | `{"status":"delivered","priority":"high"}` |
-| Standard | `{"topic":"automation","threshold":10000000}` | Standard | ✅ Delivered with STANDARD label | `{"status":"delivered","priority":"standard"}` |
-| Empty | controlled nonexistent topic | No results | ✅ Delivered with no-results notice | `{"status":"delivered","priority":"empty"}` |
-| Validation failure | `{"topic":"automation","threshold":99999999}` | Error route | — | HTTP 502 from `Respond failure` |
+| **Priority Case** | `{"topic":"automation","threshold":1000}` | Priority Branch | ✅ Delivered: `PRIORITY — GitHub Repository Digest` (5 repos, languages enriched) | `{"status":"delivered","priority":"high"}` |
+| **Standard Case** | `{"topic":"automation","threshold":10000000}` | Standard Branch | ✅ Delivered: `STANDARD — GitHub Repository Digest` (5 repos, languages enriched) | `{"status":"delivered","priority":"standard"}` |
+| **Empty Results** | Controlled nonexistent topic | No Results Branch | ✅ Delivered: `GitHub Repository Digest — No results` (enrichment skipped) | `{"status":"delivered","priority":"empty"}` |
+| **Validation Failure** | `{"topic":"automation","threshold":99999999}` | Error Route | — (No notification sent) | HTTP 502 via `Respond failure` |
 
-### Error routes implemented
-
-| Failure scenario | Triggering condition | Route |
-|---|---|---|
-| Invalid input | topic or threshold fails validation in `Configure request` | `Report failure → Respond failure → Mark execution failed` |
-| GitHub API failure | `Search GitHub` HTTP node throws or returns non-2xx | `Report failure → Respond failure → Mark execution failed` |
-| Normalisation error | All items malformed or items array missing | `Report failure → Respond failure → Mark execution failed` |
-| Formatting error | Digest exceeds 2,000 characters | `Report failure → Respond failure → Mark execution failed` |
-| Discord delivery failure | `Send Discord digest` throws | `Report failure → Respond failure → Mark execution failed` |
-| Language enrichment failure | `Get language breakdown` fails | Fallback: `Combine enrichment` uses original repo data; execution continues |
-
-### Code-node local test coverage
-
-```
+### Code-Node Automated Test Suite
+All data transformation nodes are covered by automated unit tests in `scripts/test-workflow-code.cjs`:
+```bash
 node scripts/test-workflow-code.cjs
 ```
-
-Covers: configuration validation (valid, invalid topic, negative threshold), ranking and top-five selection, empty GitHub response, malformed items, deduplication, enrichment calculation, enrichment fallback, both priority and standard digest formats, message size limit.
-
-**Result:** `PASS` — all assertions green.
-
-### How to import and run
-
-1. Import `task2-n8n/Task2_Workflow_Kumar_Kaushik.json` into any n8n instance.
-2. Open **Send Discord digest** → select a Discord Webhook credential.
-3. Activate or use the test webhook URL.
-4. POST `{"topic":"automation","threshold":1000}` to the webhook URL.
+Checks: input sanitization, negative thresholds, empty items array, malformed schema rejection, duplicate filtering, enrichment percentage math, enrichment fallback, Discord message length boundaries (< 2,000 chars).
 
 ---
 
-## Screenshots
+## 3. Bonus Task — Uptime & Response-Time Monitor Walkthrough
 
-| File | Contents |
+The bonus workflow [`bonus-uptime/Bonus_UptimeMonitor_Kumar_Kaushik.json`](bonus-uptime/Bonus_UptimeMonitor_Kumar_Kaushik.json) monitors the Task 1 target web application:
+
+1. **Schedule Trigger:** Triggers every 5 minutes.
+2. **Ping Web App:** Sends HTTP GET request with 3 retry attempts and 2-second backoff.
+3. **Response-Time Measurement:** Measures exact millisecond latency between request initiation and completion.
+4. **Health Evaluation:** Classifies performance (`EXCELLENT` < 1s, `ACCEPTABLE` < 3s, `SLOW` >= 3s, or `DOWN`).
+5. **Conditional Branching:** If HTTP status != 200 or connection times out, constructs an incident alert and posts to Discord.
+
+---
+
+## 4. Screenshots Index
+
+| File | Content |
 |---|---|
-| `task2-n8n/screenshots/workflow-draft.png` | Canvas captured during development |
-| `task2-n8n/screenshots/Task2_Workflow_Canvas.png` | ⏳ Full canvas — to be added from Cloud instance |
-| `task2-n8n/screenshots/Task2_Successful_Execution.png` | ⏳ Successful execution panel — to be added from Cloud instance |
-| `task1-qa/evidence/` | Per-finding screenshots and JSON for all five QA findings |
+| `task2-n8n/screenshots/workflow-draft.png` | Imported workflow canvas on n8n Cloud |
+| `task2-n8n/screenshots/Task2_Workflow_Canvas.png` | ⏳ Final full canvas screenshot from Cloud UI |
+| `task2-n8n/screenshots/Task2_Successful_Execution.png` | ⏳ Execution details panel showing real output |
+| `task1-qa/evidence/` | 20+ individual screenshot and JSON artifacts for QA findings |

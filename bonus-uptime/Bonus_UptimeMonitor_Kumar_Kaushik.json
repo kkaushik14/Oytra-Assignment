@@ -1,0 +1,283 @@
+{
+  "name": "Bonus — Web Application Uptime & Response-Time Monitor",
+  "nodes": [
+    {
+      "id": "d7575b82-1795-454e-b2ef-ce208fc8eeab",
+      "name": "Schedule 5m Ping",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7737d54d-0d70-4046-8379-da93d24f0a83",
+      "name": "Initialize Ping",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst timestamp = new Date().toISOString();\nconst targetUrl = 'https://demo.realworld.show';\nconst apiTarget = 'https://api.realworld.show/api/tags';\nreturn [{\n  json: {\n    timestamp,\n    targetUrl,\n    apiTarget,\n    startTime: Date.now(),\n    monitorVersion: '1.0.0'\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "ad216e46-22f8-4736-98bf-d4da73ef8f32",
+      "name": "Ping Web App",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.targetUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Oytra-Uptime-Monitor/1.0"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "370f8692-6b80-42f3-b392-96d6b17fec2e",
+      "name": "Evaluate Health & Latency",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst init = $('Initialize Ping').first().json;\nconst httpRes = $input.first().json;\nconst durationMs = Date.now() - init.startTime;\n\nconst statusCode = httpRes.statusCode || (httpRes.error ? (httpRes.error.status || 500) : 200);\nconst isSuccess = statusCode >= 200 && statusCode < 300 && !httpRes.error;\nconst isDegraded = isSuccess && durationMs > 3000;\nconst statusCategory = !isSuccess ? 'DOWN' : (isDegraded ? 'DEGRADED' : 'HEALTHY');\n\nreturn [{\n  json: {\n    target: init.targetUrl,\n    timestamp: init.timestamp,\n    checkedAt: new Date().toISOString(),\n    durationMs,\n    statusCode,\n    isSuccess,\n    isDegraded,\n    statusCategory,\n    errorDetail: httpRes.error ? (httpRes.error.message || JSON.stringify(httpRes.error)) : null,\n    retriesConfigured: 3\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "3d9d90b8-1d79-4fc7-943b-029ca986630a",
+      "name": "App Healthy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        960,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a458d350-0845-48e4-a4df-da19867f9199",
+              "leftValue": "={{ $json.isSuccess }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "2170e56f-c1d9-4031-bb23-378f26f3996e",
+      "name": "Format Incident Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        160
+      ],
+      "parameters": {
+        "jsCode": "\nconst data = $input.first().json;\nconst clean = s => String(s || '').replace(/@/g, '＠').slice(0, 150);\n\nconst lines = [\n  '🚨 **OYTRA UPTIME ALERT — SERVICE DOWN / UNRESPONSIVE**',\n  '',\n  '• **Target Application:** ' + clean(data.target),\n  '• **Status Code:** ' + data.statusCode + ' (Expected: 200 OK)',\n  '• **Response Latency:** ' + data.durationMs + ' ms',\n  '• **Health Category:** ' + data.statusCategory,\n  '• **Retries Attempted:** ' + data.retriesConfigured + ' tries with 2s backoff',\n  '• **Incident Timestamp:** ' + data.checkedAt,\n  data.errorDetail ? ('• **Error Detail:** ' + clean(data.errorDetail)) : '',\n  '',\n  '⚠️ **Action:** Verify cloud bucket, DNS routing, or web server container status.'\n].filter(Boolean);\n\nreturn [{ json: { ...data, content: lines.join('\\n'), alertType: 'INCIDENT' } }];\n"
+      }
+    },
+    {
+      "id": "f571a4bd-24ff-4cbb-b5c5-371616290836",
+      "name": "Send Incident Alert",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        160
+      ],
+      "parameters": {
+        "authentication": "webhook",
+        "resource": "message",
+        "operation": "sendLegacy",
+        "content": "={{ $json.content }}",
+        "options": {
+          "wait": true
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "19de463b-7c24-498b-8a4c-6a1b7c3f985b",
+      "name": "Log Incident Receipt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        160
+      ],
+      "parameters": {
+        "jsCode": "\nconst alert = $('Format Incident Alert').first().json;\nreturn [{\n  json: {\n    status: 'ALERT_DELIVERED',\n    category: alert.statusCategory,\n    target: alert.target,\n    recordedAt: new Date().toISOString()\n  }\n}];\n"
+      }
+    },
+    {
+      "id": "38f24ad4-730c-4b85-8b19-8396315fc6a4",
+      "name": "Format Heartbeat Pulse",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "\nconst data = $input.first().json;\nreturn [{\n  json: {\n    status: 'HEALTHY',\n    target: data.target,\n    statusCode: data.statusCode,\n    latencyMs: data.durationMs,\n    latencySLA: data.durationMs < 1000 ? 'EXCELLENT' : (data.durationMs < 3000 ? 'ACCEPTABLE' : 'SLOW'),\n    timestamp: data.checkedAt\n  }\n}];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Schedule 5m Ping": {
+      "main": [
+        [
+          {
+            "node": "Initialize Ping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Ping": {
+      "main": [
+        [
+          {
+            "node": "Ping Web App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ping Web App": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Health & Latency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Health & Latency": {
+      "main": [
+        [
+          {
+            "node": "App Healthy?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "App Healthy?": {
+      "main": [
+        [
+          {
+            "node": "Format Heartbeat Pulse",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Incident Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Incident Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Incident Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Incident Alert": {
+      "main": [
+        [
+          {
+            "node": "Log Incident Receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "executionTimeout": 60
+  },
+  "active": false,
+  "pinData": {},
+  "tags": [
+    "uptime",
+    "bonus",
+    "monitoring",
+    "realworld"
+  ]
+}
