@@ -84,7 +84,7 @@ The bonus workflow [`bonus-uptime/Bonus_UptimeMonitor_Kumar_Kaushik.json`](bonus
 
 | File | Content |
 |---|---|
-| `task2-n8n/screenshots/workflow-draft.png` | Imported workflow canvas on n8n Cloud |
-| `task2-n8n/screenshots/Task2_Workflow_Canvas.png` | ⏳ Final full canvas screenshot from Cloud UI |
+| `task2-n8n/screenshots/Task2_Workflow_Canvas.png` | Full 18-node workflow canvas on n8n Cloud |
+| `task2-n8n/screenshots/workflow-draft.jpeg` | Original high-resolution Cloud canvas capture |
 | `task2-n8n/screenshots/Task2_Successful_Execution.png` | ⏳ Execution details panel showing real output |
 | `task1-qa/evidence/` | 20+ individual screenshot and JSON artifacts for QA findings |

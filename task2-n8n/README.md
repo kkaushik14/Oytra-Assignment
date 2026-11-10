@@ -60,7 +60,7 @@ Any error → `Report failure` → `Respond failure` → `Mark execution failed`
 | Empty | nonexistent topic | No results | ✅ Delivered no-results notice, enrichment skipped |
 | Validation failure | threshold `99999999` | Error | ✅ HTTP 502, execution marked failed |
 
-`screenshots/workflow-draft.png` shows the imported canvas. `Task2_Workflow_Canvas.png` and `Task2_Successful_Execution.png` are to be added after capturing them from the Cloud instance.
+Canvas screenshot is saved at `screenshots/Task2_Workflow_Canvas.png` (high-resolution capture from Cloud instance). `Task2_Successful_Execution.png` represents the execution details panel.
 
 ## Local code checks
 
