@@ -1,6 +1,5 @@
 # Oytra Assignment — Automation & QA Developer
 
-**Candidate:** Kumar Kaushik  
 **GitHub Repository:** [https://github.com/kkaushik14/Oytra-Assignment](https://github.com/kkaushik14/Oytra-Assignment)  
 **Detailed Walkthrough:** [`WALKTHROUGH.md`](WALKTHROUGH.md)
 
@@ -18,8 +17,8 @@
 | **1**<br/>_(QA-01)_ | Rapid favorite clicks leave count/state desynced until reload | **Exp:** Ignore in-flight clicks or sync count.<br/>**Act:** Double-click left count at 0; reload showed 1.                                                | **Medium** | Missing debounce guard; CSS class used instead of native HTML disabled attribute.          |
 | **2**<br/>_(QA-02)_ | Deleting already-deleted article leaves tab stuck with error  | **Exp:** Show not-found message & route to feed.<br/>**Act:** Tab stuck on deleted item; console error logged; no recovery.                                | **Medium** | Article deletion component only handles success; unhandled 404 leaves UI pending.          |
 | **3**<br/>_(QA-03)_ | Missing article displays unexplained blank content area       | **Exp:** Render 404 message with "Return to feed".<br/>**Act:** Main area completely blank; API returned HTTP 404.                                         | **Medium** | Frontend router/component lacks error boundary or empty-state handler for 404.             |
-| **4**<br/>_(QA-05)_ | Comment delete action unreachable via keyboard navigation     | **Exp:** `Tab` reaches Delete button; `Enter`/`Space` activates.<br/>**Act:** `Tab` skips trash icon; control is `<i>` inside `<span>` with `tabIndex -1`. | **Medium** | Interactive click handler bound to decorative `<i>` element rather than native `<button>`. |
-| **5**<br/>_(QA-04)_ | Whitespace-only comments accepted and persisted               | **Exp:** Reject empty/whitespace input.<br/>**Act:** Empty comment card created; persists across reload.                                                   |  **Low**   | Missing string trimming / validation check on client form and server API.                  |
+| **4**<br/>_(QA-04)_ | Comment delete action unreachable via keyboard navigation     | **Exp:** `Tab` reaches Delete button; `Enter`/`Space` activates.<br/>**Act:** `Tab` skips trash icon; control is `<i>` inside `<span>` with `tabIndex -1`. | **Medium** | Interactive click handler bound to decorative `<i>` element rather than native `<button>`. |
+| **5**<br/>_(QA-05)_ | Whitespace-only comments accepted and persisted               | **Exp:** Reject empty/whitespace input.<br/>**Act:** Empty comment card created; persists across reload.                                                   |  **Low**   | Missing string trimming / validation check on client form and server API.                  |
 
 **Root-Cause Analysis (QA-05):** The trash icon is an non-focusable `<i>` element (`tabIndex -1`) lacking button semantics and accessible labelling. Tabbing skips deletion, though mouse clicks trigger the delete API successfully. Fix: replace with `<button type="button" aria-label="Delete comment">` with keyboard event listeners.
 
@@ -47,29 +46,3 @@
 - **Incident Alerting:** Formats and posts Discord alert if status code != 200 or timeout occurs.
 
 ---
-
-## 4. Repository Structure
-
-```
-.
-├── README.md                      ← Submission overview (< 1 page)
-├── WALKTHROUGH.md                 ← In-depth execution & architecture guide
-├── task1-qa/                      ← Task 1: Web App QA & Debug Report
-│   ├── Task1_QA_Report_Kumar_Kaushik.pdf  ← 7-page PDF report (Section 5 template)
-│   ├── test-matrix.md             ← Full execution matrix & bug table
-│   ├── findings.json              ← Machine-readable defect catalog
-│   └── evidence/                  ← 20+ screenshot and JSON evidence files
-├── task2-n8n/                     ← Task 2: GitHub Intelligence Digest
-│   ├── Task2_Workflow_Kumar_Kaushik.json  ← 18-node importable workflow
-│   ├── README.md                  ← Node architecture, APIs, transformations
-│   ├── src/                       ← Modular code-node logic (configure, normalize, enrich, format)
-│   └── screenshots/               ← Canvas and execution screenshots
-├── bonus-uptime/                  ← Bonus Task: Uptime & Latency Monitor
-│   ├── Bonus_UptimeMonitor_Kumar_Kaushik.json  ← 9-node uptime workflow
-│   └── README.md                  ← Uptime architecture & alerting logic
-└── scripts/                       ← Build & verification automation
-    ├── test-workflow-code.cjs     ← Unit tests for workflow code logic
-    ├── build-qa-report.py         ← Automated ReportLab PDF generator
-    ├── build-workflow.cjs         ← Task 2 workflow JSON compiler
-    └── build-bonus-workflow.cjs   ← Bonus workflow JSON compiler
-```
